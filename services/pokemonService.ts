@@ -1,5 +1,5 @@
 import api from "./api";
-import { PokemonData, MoveDetail } from "@/types/pokemon";
+import { PokemonData, MoveDetail, AbilityDetail } from "@/types/pokemon";
 
 export const pokemonService = {
   // Busca lista de todos os Pokémon (para o autocomplete)
@@ -15,6 +15,11 @@ export const pokemonService = {
 
   getMoveDetails: async (moveUrl: string): Promise<MoveDetail> => {
     const { data } = await api.get(moveUrl);
+    return data;
+  },
+
+  getAbilityDetails: async (url: string): Promise<AbilityDetail> => {
+    const { data } = await api.get(url);
     return data;
   },
 };
