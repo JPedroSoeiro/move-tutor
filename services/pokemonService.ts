@@ -1,5 +1,10 @@
 import api from "./api";
-import { PokemonData, MoveDetail, AbilityDetail } from "@/types/pokemon";
+import {
+  PokemonData,
+  MoveDetail,
+  AbilityDetail,
+  ItemDetail,
+} from "@/types/pokemon";
 
 export const pokemonService = {
   // Busca lista de todos os Pokémon (para o autocomplete)
@@ -21,5 +26,17 @@ export const pokemonService = {
   getAbilityDetails: async (url: string): Promise<AbilityDetail> => {
     const { data } = await api.get(url);
     return data;
+  },
+
+  getItemDetails: async (name: string): Promise<ItemDetail> => {
+    const { data } = await api.get(
+      `/item/${name.toLowerCase().replace(" ", "-")}`,
+    );
+    return data;
+  },
+
+  getAllItemNames: async (): Promise<string[]> => {
+    const { data } = await api.get("/item?limit=2000");
+    return data.results.map((item: any) => item.name);
   },
 };

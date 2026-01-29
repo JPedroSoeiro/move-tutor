@@ -27,6 +27,14 @@ export interface AbilityDetail {
   }[];
 }
 
+export interface ItemDetail {
+  name: string;
+  effect_entries: {
+    short_effect: string;
+    language: { name: string };
+  }[];
+}
+
 export interface PokemonData {
   name: string;
   sprites: {
@@ -36,6 +44,7 @@ export interface PokemonData {
         "black-white": {
           animated: {
             front_default: string;
+            front_shiny: string;
           };
         };
       };
