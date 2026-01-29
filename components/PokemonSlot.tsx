@@ -1,16 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { pokemonService } from "@/services/pokemonService";
-import { TYPE_COLORS } from "@/constants/typeChart";
 import { NATURES } from "@/constants/natures";
 import { RadarChart } from "./RadarChart";
-import { MoveDetail, AbilityDetail, ItemDetail, Move } from "@/types/pokemon";
 
 interface Props {
   index: number;
   onUpdate: (idx: number, data: any) => void;
+  onCompare: (pkmn: string, stat: string, val: number) => void;
   allNames: string[];
   allItemNames: string[];
   initialData?: any;
@@ -19,31 +18,31 @@ interface Props {
 export function PokemonSlot({
   index,
   onUpdate,
+  onCompare,
   allNames,
   allItemNames,
   initialData,
 }: Props) {
-  // Inicialização dos estados
   const [pokemon, setPokemon] = useState<any>(null);
-  const [moves, setMoves] = useState<Move[]>([]);
-  const [selectedMoves, setSelectedMoves] = useState<(MoveDetail | null)[]>([
+  const [moves, setMoves] = useState<any[]>([]);
+  const [selectedMoves, setSelectedMoves] = useState<(any | null)[]>([
     null,
     null,
     null,
     null,
   ]);
-  const [selectedAbility, setSelectedAbility] = useState<AbilityDetail | null>(
-    null,
-  );
-  const [selectedItem, setSelectedItem] = useState<ItemDetail | null>(null);
+  const [selectedAbility, setSelectedAbility] = useState<any | null>(null);
+  const [selectedItem, setSelectedItem] = useState<any | null>(null);
   const [selectedNature, setSelectedNature] = useState<string>("Hardy");
   const [isShiny, setIsShiny] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
 
-  // Sincroniza o estado local quando os dados são carregados do LocalStorage (Pai)
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Sincronização inicial (Sem disparar onUpdate para evitar loop)
   useEffect(() => {
-    if (initialData) {
-      setPokemon(initialData.pokemon || null);
+    if (initialData && initialData.pokemon) {
+      setPokemon(initialData.pokemon);
       setMoves(initialData.moves || []);
       setSelectedMoves(initialData.selectedMoves || [null, null, null, null]);
       setSelectedAbility(initialData.selectedAbility || null);
@@ -53,9 +52,8 @@ export function PokemonSlot({
     }
   }, [initialData]);
 
-  // Helper para atualizar o estado global no page.tsx
   const syncUpdate = (updatedFields: any) => {
-    onUpdate(index, {
+    const finalData = {
       pokemon,
       moves,
       selectedMoves,
@@ -63,83 +61,52 @@ export function PokemonSlot({
       selectedItem,
       nature: selectedNature,
       isShiny,
-      moveTypes: selectedMoves
-        .filter((m) => m !== null)
-        .map((m) => m!.type.name),
+      moveTypes: (updatedFields.selectedMoves || selectedMoves)
+        .filter((m: any) => m !== null)
+        .map((m: any) => m.type.name),
       ...updatedFields,
-    });
+    };
+    onUpdate(index, finalData);
   };
 
   const handleSearch = async (name: string) => {
     if (!name || name === pokemon?.name) return;
-    setLoading(true);
     try {
       const data = await pokemonService.getPokemonByName(name);
       const availableMoves = data.moves
         .map((m: any) => ({ name: m.move.name, url: m.move.url }))
         .sort((a: any, b: any) => a.name.localeCompare(b.name));
-
       setPokemon(data);
       setMoves(availableMoves);
-      setSelectedMoves([null, null, null, null]);
-      setSelectedAbility(null);
-      setSelectedItem(null);
-      setIsShiny(false);
-
-      onUpdate(index, {
+      const resetMoves = [null, null, null, null];
+      setSelectedMoves(resetMoves);
+      syncUpdate({
         pokemon: data,
-        moveTypes: [],
         moves: availableMoves,
-        nature: "Hardy",
-        isShiny: false,
+        selectedMoves: resetMoves,
       });
     } catch (e) {
-      console.error("Erro na busca do Pokémon");
-    } finally {
-      setLoading(false);
+      console.error("Erro busca");
     }
   };
 
-  const handleItemSearch = async (itemName: string) => {
-    const formattedName = itemName.trim().toLowerCase().replace(/\s+/g, "-");
-    if (!formattedName) {
-      setSelectedItem(null);
-      syncUpdate({ selectedItem: null, item: null });
-      return;
-    }
-    try {
-      const details = await pokemonService.getItemDetails(formattedName);
-      setSelectedItem(details);
-      syncUpdate({ selectedItem: details, item: details.name });
-    } catch (e) {
-      console.error("Item não encontrado");
-    }
+  const handleClearSlot = () => {
+    if (inputRef.current) inputRef.current.value = "";
+    setPokemon(null);
+    setMoves([]);
+    setSelectedMoves([null, null, null, null]);
+    setSelectedAbility(null);
+    setSelectedItem(null);
+    setSelectedNature("Hardy");
+    setIsShiny(false);
+    onUpdate(index, null);
   };
 
-  const handleMoveSelect = async (mIdx: number, url: string) => {
-    if (!url) {
-      const newSelected = [...selectedMoves];
-      newSelected[mIdx] = null;
-      setSelectedMoves(newSelected);
-      syncUpdate({ selectedMoves: newSelected });
-      return;
-    }
-    const details = await pokemonService.getMoveDetails(url);
-    const newSelected = [...selectedMoves];
-    newSelected[mIdx] = details;
-    setSelectedMoves(newSelected);
-    syncUpdate({
-      selectedMoves: newSelected,
-      moveTypes: newSelected.filter((m) => m !== null).map((m) => m!.type.name),
-    });
-  };
-
-  const calculateRealPower = (move: MoveDetail | null) => {
+  const calculateRealPower = (move: any) => {
     if (!move || !pokemon || !move.power) return move?.power || 0;
-    const isStab = pokemon.types.some(
-      (t: any) => t.type.name === move.type.name,
-    );
-    return isStab ? Math.floor(move.power * 1.5) : move.power;
+    return pokemon.types.some((t: any) => t.type.name === move.type.name)
+      ? Math.floor(move.power * 1.5)
+      : move.power;
   };
 
   const spritePath = isShiny
@@ -148,47 +115,84 @@ export function PokemonSlot({
     : pokemon?.sprites.versions?.["generation-v"]?.["black-white"]?.animated
         ?.front_default || pokemon?.sprites.front_default;
 
-  const currentNatureData = NATURES.find((n) => n.name === selectedNature);
+  const currentNature = NATURES.find((n) => n.name === selectedNature);
 
   return (
-    <div className="relative group hover:z-50 p-6 rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl transition-all hover:border-blue-500/30">
+    <div className="relative group hover:z-50 p-6 rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl transition-all">
+      {/* 1. PESQUISA */}
       <div className="relative mb-6">
         <input
+          ref={inputRef}
           list={`list-${index}`}
           defaultValue={pokemon?.name || ""}
           placeholder="Buscar Pokémon..."
-          className="w-full bg-transparent border-b border-white/10 pb-2 outline-none text-white font-medium placeholder:text-zinc-700 focus:border-blue-500 transition-colors"
+          className="w-full bg-transparent border-b border-white/10 pb-2 outline-none text-white font-medium focus:border-blue-500 transition-colors"
           onBlur={(e) => handleSearch(e.target.value)}
         />
         <datalist id={`list-${index}`}>
-          {allNames.map((name) => (
-            <option key={name} value={name} />
+          {allNames.map((n) => (
+            <option key={n} value={n} />
           ))}
         </datalist>
       </div>
 
+      {/* 2. MENU STAT SCOUT */}
+      {pokemon && (
+        <div className="absolute top-20 right-4 z-70">
+          <button
+            onClick={() => setShowOptions(!showOptions)}
+            className="w-8 h-8 flex items-center justify-center text-zinc-500 hover:text-white bg-white/5 rounded-full hover:bg-white/10 transition-all border border-white/5"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
+            </svg>
+          </button>
+          {showOptions && (
+            <div className="absolute right-0 mt-2 w-48 bg-zinc-950 border border-white/10 rounded-2xl shadow-2xl p-2 animate-in zoom-in-95">
+              <p className="text-[9px] text-zinc-500 font-black uppercase p-3 border-b border-white/5 mb-1 tracking-widest">
+                Stat Scout
+              </p>
+              {pokemon.stats.map((s: any) => (
+                <button
+                  key={s.stat.name}
+                  onClick={() => {
+                    onCompare(pokemon.name, s.stat.name, s.base_stat);
+                    setShowOptions(false);
+                  }}
+                  className="w-full text-left px-4 py-2 text-[11px] font-bold text-zinc-300 hover:bg-blue-600 hover:text-white rounded-xl flex justify-between transition-colors capitalize"
+                >
+                  <span>{s.stat.name.replace("-", " ")}</span>{" "}
+                  <span className="opacity-40">{s.base_stat}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 3. CONTEÚDO */}
       {pokemon && (
         <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+          {/* SPRITE & RADAR */}
           <div className="relative group/radar flex items-center justify-between mb-6 cursor-help">
             <div className="flex items-center gap-3">
               <div className="relative">
                 <Image
-                  width={100}
-                  height={100}
-                  src={spritePath}
+                  src={spritePath || ""}
+                  width={64}
+                  height={64}
                   unoptimized
-                  className="w-16 h-16 object-contain drop-shadow-lg"
-                  alt={pokemon.name}
+                  className="object-contain"
+                  alt="pkmn"
                 />
                 <button
                   onClick={() => {
                     setIsShiny(!isShiny);
                     syncUpdate({ isShiny: !isShiny });
                   }}
-                  className={`absolute -top-2 -left-2 p-1.5 rounded-full transition-all shadow-xl border border-white/10 ${isShiny ? "bg-yellow-400 text-black" : "bg-zinc-800 text-zinc-500 hover:text-white"}`}
+                  className={`absolute -top-2 -left-2 p-1 rounded-full shadow-xl transition-all ${isShiny ? "bg-yellow-400 text-black" : "bg-zinc-800"}`}
                 >
                   <svg
-                    xmlns="http://www.w3.org/2000/svg"
                     width="10"
                     height="10"
                     viewBox="0 0 24 24"
@@ -198,58 +202,53 @@ export function PokemonSlot({
                   </svg>
                 </button>
               </div>
-              <div>
-                <h3 className="text-xl font-black text-white uppercase tracking-tighter leading-none">
-                  {pokemon.name}
-                </h3>
-                <div className="flex gap-1 mt-2">
-                  {pokemon.types.map((t: any) => (
-                    <span
-                      key={t.type.name}
-                      className={`${TYPE_COLORS[t.type.name]} text-[8px] font-black px-2 py-0.5 rounded-md text-white uppercase shadow-sm`}
-                    >
-                      {t.type.name}
-                    </span>
-                  ))}
-                </div>
-              </div>
+              <h3 className="text-xl font-black text-white uppercase tracking-tighter">
+                {pokemon.name}
+              </h3>
             </div>
-
-            <div className="invisible group-hover/radar:visible absolute z-[100] bottom-full left-1/2 -translate-x-1/2 mb-6 animate-in fade-in zoom-in-95 duration-200">
+            <div className="invisible group-hover/radar:visible absolute z-100 bottom-full left-1/2 -translate-x-1/2 mb-6 animate-in zoom-in-95">
               <RadarChart stats={pokemon.stats} />
             </div>
           </div>
 
+          {/* ITEM (COM HOVER RESTAURADO) */}
           <div className="mb-4 relative group/item">
             <label className="text-[10px] text-zinc-500 font-bold uppercase mb-1 block tracking-widest">
-              Item Segurado
+              Item
             </label>
             <input
-              list={`items-list-${index}`}
-              defaultValue={selectedItem?.name.replace(/-/g, " ") || ""}
-              placeholder="Ex: Life Orb"
+              list={`items-${index}`}
+              defaultValue={
+                selectedItem?.name ? selectedItem.name.replace(/-/g, " ") : ""
+              }
               className="w-full bg-zinc-900/50 border border-white/10 rounded-xl p-2.5 text-xs text-zinc-300 outline-none focus:border-yellow-500/50 transition-colors"
-              onBlur={(e) => handleItemSearch(e.target.value)}
+              onBlur={(e) =>
+                pokemonService.getItemDetails(e.target.value).then((d) => {
+                  setSelectedItem(d);
+                  syncUpdate({ selectedItem: d });
+                })
+              }
             />
-            <datalist id={`items-list-${index}`}>
-              {allItemNames.map((name) => (
-                <option key={name} value={name.replace(/-/g, " ")} />
+            <datalist id={`items-${index}`}>
+              {allItemNames.map((n) => (
+                <option key={n} value={n.replace(/-/g, " ")} />
               ))}
             </datalist>
             {selectedItem && (
-              <div className="invisible group-hover/item:visible absolute z-50 w-full left-0 -top-20 p-3 bg-zinc-950 border border-yellow-500/30 rounded-xl shadow-2xl animate-in zoom-in-95 backdrop-blur-md">
-                <p className="text-[10px] text-yellow-500 font-bold uppercase mb-1">
+              <div className="invisible group-hover/item:visible absolute z-50 w-full left-0 -top-24 p-4 bg-zinc-950/95 border border-yellow-500/30 rounded-2xl shadow-2xl animate-in zoom-in-95 backdrop-blur-md">
+                <p className="text-[10px] text-yellow-500 font-black uppercase mb-1 tracking-tighter">
                   Efeito
                 </p>
                 <p className="text-[9px] text-zinc-300 leading-relaxed italic">
-                  {selectedItem.effect_entries.find(
-                    (e) => e.language.name === "en",
+                  {selectedItem?.effect_entries?.find(
+                    (e: any) => e.language.name === "en",
                   )?.short_effect || "Sem descrição."}
                 </p>
               </div>
             )}
           </div>
 
+          {/* HABILIDADE (COM HOVER RESTAURADO) */}
           <div className="mb-4 relative group/ability">
             <label className="text-[10px] text-zinc-500 font-bold uppercase mb-1 block tracking-widest">
               Habilidade
@@ -261,38 +260,42 @@ export function PokemonSlot({
                   (a: any) => a.ability.name === selectedAbility?.name,
                 )?.ability.url || ""
               }
-              onChange={(e) => {
-                const url = e.target.value;
-                if (!url) {
-                  setSelectedAbility(null);
-                  syncUpdate({ selectedAbility: null });
-                  return;
-                }
-                pokemonService.getAbilityDetails(url).then((details) => {
-                  setSelectedAbility(details);
-                  syncUpdate({
-                    selectedAbility: details,
-                    ability: details.name,
-                  });
-                });
-              }}
+              onChange={(e) =>
+                pokemonService.getAbilityDetails(e.target.value).then((d) => {
+                  setSelectedAbility(d);
+                  syncUpdate({ selectedAbility: d });
+                })
+              }
             >
-              <option value="">Escolher Habilidade</option>
+              <option value="">Escolher</option>
               {pokemon.abilities.map((a: any) => (
                 <option key={a.ability.name} value={a.ability.url}>
                   {a.ability.name.replace(/-/g, " ")}
                 </option>
               ))}
             </select>
+            {selectedAbility && (
+              <div className="invisible group-hover/ability:visible absolute z-50 w-full left-0 -top-24 p-4 bg-zinc-950/95 border border-blue-500/30 rounded-2xl shadow-2xl animate-in zoom-in-95 backdrop-blur-md">
+                <p className="text-[10px] text-blue-400 font-black uppercase mb-1 tracking-tighter">
+                  Efeito
+                </p>
+                <p className="text-[9px] text-zinc-300 leading-relaxed italic">
+                  {selectedAbility?.effect_entries?.find(
+                    (e: any) => e.language.name === "en",
+                  )?.short_effect || "Sem descrição."}
+                </p>
+              </div>
+            )}
           </div>
 
+          {/* NATUREZA (COM INDICADORES RESTAURADOS) */}
           <div className="mb-6 relative group/nature">
             <label className="text-[10px] text-zinc-500 font-bold uppercase mb-1 block tracking-widest">
               Natureza
             </label>
             <select
               value={selectedNature}
-              className="w-full bg-zinc-900/50 border border-white/10 rounded-xl p-2.5 text-xs text-zinc-300 outline-none"
+              className="w-full bg-zinc-900/50 border border-white/10 rounded-xl p-2.5 text-xs text-zinc-300 outline-none focus:border-zinc-500 transition-all"
               onChange={(e) => {
                 setSelectedNature(e.target.value);
                 syncUpdate({ nature: e.target.value });
@@ -304,8 +307,17 @@ export function PokemonSlot({
                 </option>
               ))}
             </select>
+            <div className="invisible group-hover/nature:visible absolute z-30 right-0 -top-12 p-2 bg-zinc-900 border border-white/10 rounded-lg shadow-xl flex gap-3 animate-in zoom-in-95 backdrop-blur-md">
+              <span className="text-[10px] font-black text-green-400">
+                ↑ {currentNature?.plus}
+              </span>
+              <span className="text-[10px] font-black text-red-400">
+                ↓ {currentNature?.minus}
+              </span>
+            </div>
           </div>
 
+          {/* ATAQUES (COM DESCRIÇÃO NO HOVER) */}
           <div className="space-y-3">
             {[0, 1, 2, 3].map((i) => (
               <div key={i} className="relative group/move">
@@ -315,7 +327,14 @@ export function PokemonSlot({
                     moves.find((m) => m.name === selectedMoves[i]?.name)?.url ||
                     ""
                   }
-                  onChange={(e) => handleMoveSelect(i, e.target.value)}
+                  onChange={(e) =>
+                    pokemonService.getMoveDetails(e.target.value).then((d) => {
+                      const ns = [...selectedMoves];
+                      ns[i] = d;
+                      setSelectedMoves(ns);
+                      syncUpdate({ selectedMoves: ns });
+                    })
+                  }
                 >
                   <option value="">Ataque {i + 1}</option>
                   {moves.map((m) => (
@@ -324,13 +343,12 @@ export function PokemonSlot({
                     </option>
                   ))}
                 </select>
-
                 {selectedMoves[i] && (
-                  <div className="invisible group-hover/move:visible absolute z-[60] w-full left-0 -top-36 p-4 bg-zinc-950 border border-white/20 rounded-2xl shadow-2xl animate-in zoom-in-95 duration-200 backdrop-blur-md">
-                    <div className="flex justify-between items-center mb-3">
+                  <div className="invisible group-hover/move:visible absolute z-60 w-full left-0 -top-40 p-4 bg-zinc-950 border border-white/20 rounded-2xl shadow-2xl animate-in zoom-in-95 backdrop-blur-md">
+                    <div className="flex justify-between items-center mb-3 border-b border-white/10 pb-2">
                       <div className="text-center">
-                        <p className="text-[8px] text-zinc-500 uppercase font-black tracking-widest">
-                          Poder Real
+                        <p className="text-[8px] text-zinc-500 uppercase font-black">
+                          Power
                         </p>
                         <p
                           className={`text-sm font-black ${calculateRealPower(selectedMoves[i]) !== selectedMoves[i]?.power ? "text-blue-400" : "text-white"}`}
@@ -338,22 +356,47 @@ export function PokemonSlot({
                           {calculateRealPower(selectedMoves[i]) || "--"}
                         </p>
                       </div>
-                      {/* ... Acc e PP ... */}
+                      <div className="text-center px-4 border-x border-white/5">
+                        <p className="text-[8px] text-zinc-500 uppercase font-black">
+                          Acc
+                        </p>
+                        <p className="text-sm font-black text-white">
+                          {selectedMoves[i]?.accuracy
+                            ? `${selectedMoves[i]?.accuracy}%`
+                            : "--"}
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-[8px] text-zinc-500 uppercase font-black">
+                          PP
+                        </p>
+                        <p className="text-sm font-black text-white">
+                          {selectedMoves[i]?.pp}
+                        </p>
+                      </div>
                     </div>
-                    <div className="pt-3 border-t border-white/10">
-                      <p className="text-[9px] text-zinc-300 leading-relaxed italic font-medium">
-                        {selectedMoves[i]?.effect_entries
-                          ?.find((e: any) => e.language.name === "en")
-                          ?.short_effect.replace(
-                            "$effect_chance",
-                            String(selectedMoves[i]?.effect_chance || ""),
-                          ) || "Sem descrição."}
-                      </p>
-                    </div>
+                    <p className="text-[9px] text-zinc-300 leading-relaxed italic font-medium">
+                      {selectedMoves[i]?.effect_entries
+                        ?.find((e: any) => e.language.name === "en")
+                        ?.short_effect?.replace(
+                          "$effect_chance",
+                          selectedMoves[i]?.effect_chance,
+                        ) || "Sem efeito adicional."}
+                    </p>
                   </div>
                 )}
               </div>
             ))}
+          </div>
+
+          {/* BOTÃO REMOVER */}
+          <div className="mt-8 pt-4 border-t border-white/5 flex justify-center">
+            <button
+              onClick={handleClearSlot}
+              className="text-[9px] font-black uppercase tracking-[0.3em] text-zinc-700 hover:text-red-500 transition-colors"
+            >
+              [ Remover Pokémon ]
+            </button>
           </div>
         </div>
       )}
