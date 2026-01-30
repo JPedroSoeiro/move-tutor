@@ -36,6 +36,8 @@ export function PokemonSlot({
   const [selectedNature, setSelectedNature] = useState<string>("Hardy");
   const [isShiny, setIsShiny] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
+  const [evolutions, setEvolutions] = useState<string[]>([]);
+  const [showEvoLab, setShowEvoLab] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -73,18 +75,15 @@ export function PokemonSlot({
     if (!name || name === pokemon?.name) return;
     try {
       const data = await pokemonService.getPokemonByName(name);
+      const evos = await pokemonService.getEvolutionChain(data.species.url); // NOVO
+      setEvolutions(evos);
+
       const availableMoves = data.moves
         .map((m: any) => ({ name: m.move.name, url: m.move.url }))
         .sort((a: any, b: any) => a.name.localeCompare(b.name));
       setPokemon(data);
       setMoves(availableMoves);
-      const resetMoves = [null, null, null, null];
-      setSelectedMoves(resetMoves);
-      syncUpdate({
-        pokemon: data,
-        moves: availableMoves,
-        selectedMoves: resetMoves,
-      });
+      syncUpdate({ pokemon: data, moves: availableMoves });
     } catch (e) {
       console.error("Erro busca");
     }
@@ -119,14 +118,14 @@ export function PokemonSlot({
 
   return (
     <div className="relative group hover:z-50 p-6 rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl transition-all">
-      {/* 1. PESQUISA */}
+      {/* 1. SEÇÃO DE PESQUISA (TOPO) */}
       <div className="relative mb-6">
         <input
           ref={inputRef}
           list={`list-${index}`}
           defaultValue={pokemon?.name || ""}
           placeholder="Buscar Pokémon..."
-          className="w-full bg-transparent border-b border-white/10 pb-2 outline-none text-white font-medium focus:border-blue-500 transition-colors"
+          className="w-full bg-transparent border-b border-white/10 pb-2 outline-none text-white font-medium placeholder:text-zinc-700 focus:border-blue-500 transition-colors"
           onBlur={(e) => handleSearch(e.target.value)}
         />
         <datalist id={`list-${index}`}>
@@ -136,7 +135,7 @@ export function PokemonSlot({
         </datalist>
       </div>
 
-      {/* 2. MENU STAT SCOUT */}
+      {/* 2. MENU STAT SCOUT "..." (REPOSICIONADO ABAIXO DA PESQUISA) */}
       {pokemon && (
         <div className="absolute top-20 right-4 z-70">
           <button
@@ -147,9 +146,10 @@ export function PokemonSlot({
               <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
             </svg>
           </button>
+
           {showOptions && (
-            <div className="absolute right-0 mt-2 w-48 bg-zinc-950 border border-white/10 rounded-2xl shadow-2xl p-2 animate-in zoom-in-95">
-              <p className="text-[9px] text-zinc-500 font-black uppercase p-3 border-b border-white/5 mb-1 tracking-widest">
+            <div className="absolute right-0 mt-2 w-48 bg-zinc-950 border border-white/10 rounded-2xl shadow-2xl p-2 animate-in zoom-in-95 duration-200">
+              <p className="text-[9px] text-zinc-500 font-black uppercase p-3 border-b border-white/5 mb-1 tracking-widest text-center">
                 Stat Scout
               </p>
               {pokemon.stats.map((s: any) => (
@@ -170,10 +170,10 @@ export function PokemonSlot({
         </div>
       )}
 
-      {/* 3. CONTEÚDO */}
+      {/* 3. CONTEÚDO DINÂMICO DO POKÉMON */}
       {pokemon && (
         <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-          {/* SPRITE & RADAR */}
+          {/* HEADER: SPRITE, NOME E EVOLUTION LAB */}
           <div className="relative group/radar flex items-center justify-between mb-6 cursor-help">
             <div className="flex items-center gap-3">
               <div className="relative">
@@ -182,7 +182,7 @@ export function PokemonSlot({
                   width={64}
                   height={64}
                   unoptimized
-                  className="object-contain"
+                  className="object-contain drop-shadow-lg"
                   alt="pkmn"
                 />
                 <button
@@ -190,7 +190,7 @@ export function PokemonSlot({
                     setIsShiny(!isShiny);
                     syncUpdate({ isShiny: !isShiny });
                   }}
-                  className={`absolute -top-2 -left-2 p-1 rounded-full shadow-xl transition-all ${isShiny ? "bg-yellow-400 text-black" : "bg-zinc-800"}`}
+                  className={`absolute -top-2 -left-2 p-1 rounded-full shadow-xl transition-all ${isShiny ? "bg-yellow-400 text-black border-yellow-500" : "bg-zinc-800 border-white/10"}`}
                 >
                   <svg
                     width="10"
@@ -202,16 +202,67 @@ export function PokemonSlot({
                   </svg>
                 </button>
               </div>
-              <h3 className="text-xl font-black text-white uppercase tracking-tighter">
-                {pokemon.name}
-              </h3>
+
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xl font-black text-white uppercase tracking-tighter leading-none">
+                    {pokemon.name}
+                  </h3>
+
+                  {/* BOTÃO EVOLUTION LAB */}
+                  {evolutions.length > 1 && (
+                    <div className="relative">
+                      <button
+                        onClick={() => setShowEvoLab(!showEvoLab)}
+                        className="p-1 text-blue-500 hover:text-white transition-colors"
+                        title="Evolution Lab"
+                      >
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M12 2v20M7 5l10 14M17 5L7 19" />
+                        </svg>
+                      </button>
+
+                      {showEvoLab && (
+                        <div className="absolute left-0 mt-2 z-80 bg-zinc-900 border border-blue-500/30 p-2 rounded-xl shadow-2xl min-w-140px animate-in zoom-in-95">
+                          <p className="text-[8px] font-black text-zinc-500 uppercase mb-2 px-2 tracking-[0.2em]">
+                            Formas
+                          </p>
+                          {evolutions.map((evo) => (
+                            <button
+                              key={evo}
+                              onClick={() => {
+                                handleSearch(evo);
+                                setShowEvoLab(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 rounded-lg text-[10px] font-bold uppercase transition-all ${evo === pokemon.name ? "text-blue-400 bg-blue-400/10" : "text-zinc-400 hover:bg-white/5 hover:text-white"}`}
+                            >
+                              {evo}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-            <div className="invisible group-hover/radar:visible absolute z-100 bottom-full left-1/2 -translate-x-1/2 mb-6 animate-in zoom-in-95">
+
+            {/* RADAR CHART FLUTUANTE */}
+            <div className="invisible group-hover/radar:visible absolute z-100] bottom-full left-1/2 -translate-x-1/2 mb-6 animate-in zoom-in-95 duration-200">
               <RadarChart stats={pokemon.stats} />
             </div>
           </div>
 
-          {/* ITEM (COM HOVER RESTAURADO) */}
+          {/* ITEM COM HOVER DE EFEITO */}
           <div className="mb-4 relative group/item">
             <label className="text-[10px] text-zinc-500 font-bold uppercase mb-1 block tracking-widest">
               Item
@@ -242,13 +293,13 @@ export function PokemonSlot({
                 <p className="text-[9px] text-zinc-300 leading-relaxed italic">
                   {selectedItem?.effect_entries?.find(
                     (e: any) => e.language.name === "en",
-                  )?.short_effect || "Sem descrição."}
+                  )?.short_effect || "Sem descrição disponível."}
                 </p>
               </div>
             )}
           </div>
 
-          {/* HABILIDADE (COM HOVER RESTAURADO) */}
+          {/* HABILIDADE COM HOVER DE EFEITO */}
           <div className="mb-4 relative group/ability">
             <label className="text-[10px] text-zinc-500 font-bold uppercase mb-1 block tracking-widest">
               Habilidade
@@ -282,13 +333,13 @@ export function PokemonSlot({
                 <p className="text-[9px] text-zinc-300 leading-relaxed italic">
                   {selectedAbility?.effect_entries?.find(
                     (e: any) => e.language.name === "en",
-                  )?.short_effect || "Sem descrição."}
+                  )?.short_effect || "Sem descrição disponível."}
                 </p>
               </div>
             )}
           </div>
 
-          {/* NATUREZA (COM INDICADORES RESTAURADOS) */}
+          {/* NATUREZA COM HOVER DE STATUS */}
           <div className="mb-6 relative group/nature">
             <label className="text-[10px] text-zinc-500 font-bold uppercase mb-1 block tracking-widest">
               Natureza
@@ -317,12 +368,12 @@ export function PokemonSlot({
             </div>
           </div>
 
-          {/* ATAQUES (COM DESCRIÇÃO NO HOVER) */}
+          {/* ATAQUES COM HOVER DE DETALHES */}
           <div className="space-y-3">
             {[0, 1, 2, 3].map((i) => (
               <div key={i} className="relative group/move">
                 <select
-                  className="w-full bg-zinc-900/50 border border-white/10 rounded-xl p-2.5 text-xs text-zinc-300 capitalize outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full bg-zinc-900/50 border border-white/10 rounded-xl p-2.5 text-xs text-zinc-300 capitalize outline-none focus:ring-1 focus:ring-blue-500 transition-all"
                   value={
                     moves.find((m) => m.name === selectedMoves[i]?.name)?.url ||
                     ""
@@ -389,7 +440,7 @@ export function PokemonSlot({
             ))}
           </div>
 
-          {/* BOTÃO REMOVER */}
+          {/* 4. BOTÃO REMOVER (UNITÁRIO) */}
           <div className="mt-8 pt-4 border-t border-white/5 flex justify-center">
             <button
               onClick={handleClearSlot}

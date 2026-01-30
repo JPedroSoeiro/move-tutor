@@ -13,6 +13,22 @@ const STAT_MAP: Record<string, number> = {
 };
 
 export const pokemonService = {
+  getEvolutionChain: async (speciesUrl: string) => {
+    const species = await axios.get(speciesUrl);
+    const chainData = await axios.get(species.data.evolution_chain.url);
+
+    const names: string[] = [];
+    let current = chainData.data.chain;
+
+    const traverse = (node: any) => {
+      names.push(node.species.name);
+      node.evolves_to.forEach((next: any) => traverse(next));
+    };
+
+    traverse(current);
+    return names;
+  },
+
   getAllNames: async () => {
     const { data } = await api.get("/pokemon?limit=2000");
     return data.results.map((p: any) => p.name);
@@ -50,7 +66,7 @@ export const pokemonService = {
         "dynamax",
         "crystal",
         "z-crystal",
-        "max-honey", // Removendo Dynamax e Cristais
+        "max-honey",
       ];
 
       const captureBalls = [

@@ -14,21 +14,20 @@ export default function Home() {
   const [showCard, setShowCard] = useState(false);
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
 
-  const { missing, defWeaknesses, tips } = useTeamAnalysis(teamData);
+  // 1. EXTRAIA O 'nemesis' AQUI
+  const { missing, defWeaknesses, tips, nemesis } = useTeamAnalysis(teamData);
   const { comparing, results, loading, findSimilar, close } = useStatScout();
 
   useEffect(() => {
-    // Busca listas de nomes apenas uma vez
     pokemonService.getAllNames().then(setAllNames);
     pokemonService.getAllItemNames().then(setAllItemNames);
 
-    // Recupera dados salvos apenas uma vez na montagem
     const saved = localStorage.getItem("move-tutor-pro-team");
     if (saved) {
       try {
         setTeamData(JSON.parse(saved));
       } catch (e) {
-        console.error(e);
+        console.error("Erro ao carregar time", e);
       }
     }
   }, []);
@@ -41,7 +40,6 @@ export default function Home() {
       } else {
         newTeam[idx] = data;
       }
-      // Salvamos no localStorage aqui para garantir que é a versão mais nova
       localStorage.setItem("move-tutor-pro-team", JSON.stringify(newTeam));
       return newTeam;
     });
@@ -51,7 +49,7 @@ export default function Home() {
     localStorage.removeItem("move-tutor-pro-team");
     setTeamData({});
     setIsClearModalOpen(false);
-    window.location.reload(); // Recarrega para limpar todos os estados
+    window.location.reload();
   };
 
   const exportToShowdown = () => {
@@ -59,17 +57,15 @@ export default function Home() {
       .map((s: any) => {
         if (!s.pokemon) return "";
         let str = `${s.pokemon.name} ${s.isShiny ? "(S)" : ""} @ ${s.item || "No Item"}\n`;
-        str += `Ability: ${s.ability || "None"}\n`;
-        str += `Nature: ${s.nature || "Hardy"}\n`;
+        str += `Ability: ${s.ability || "None"}\nNature: ${s.nature || "Hardy"}\n`;
         s.selectedMoves?.forEach((m: any) => {
           if (m) str += `- ${m.name}\n`;
         });
         return str;
       })
       .join("\n");
-
     navigator.clipboard.writeText(text);
-    alert("Time copiado para o Showdown!");
+    alert("Time copiado!");
   };
 
   return (
@@ -82,13 +78,13 @@ export default function Home() {
               MOVE <span className="text-blue-500">Tutor</span> PRO
             </h1>
             <p className="text-zinc-500 mt-2 font-bold text-[10px] uppercase tracking-[0.3em]">
-              Tactical Analysis Lab
+              Tactical Lab
             </p>
           </div>
           <div className="flex gap-3">
             <button
               onClick={() => setShowCard(true)}
-              className="px-6 py-4 bg-blue-600 text-white font-black rounded-2xl shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-all active:scale-95"
+              className="px-6 py-4 bg-blue-600 text-white font-black rounded-2xl shadow-lg hover:bg-blue-500 transition-all active:scale-95"
             >
               GERAR CARD
             </button>
@@ -101,7 +97,7 @@ export default function Home() {
           </div>
         </header>
 
-        {/* GRID DE POKÉMON */}
+        {/* GRID */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
           {[...Array(6)].map((_, i) => (
             <PokemonSlot
@@ -116,7 +112,6 @@ export default function Home() {
           ))}
         </div>
 
-        {/* EXPORTADOR */}
         <div className="flex justify-center mb-20">
           <button
             onClick={exportToShowdown}
@@ -126,20 +121,21 @@ export default function Home() {
           </button>
         </div>
 
-        {/* DASHBOARD DE ANÁLISE */}
+        {/* 2. PASSE O 'nemesis' PARA O DASHBOARD AQUI */}
         <AnalysisDashboard
           missing={missing}
           defWeaknesses={defWeaknesses}
           tips={tips}
+          nemesis={nemesis}
         />
 
-        {/* MODAL 1: STAT SCOUT */}
+        {/* MODAL STAT SCOUT */}
         {comparing && (
-          <div className="fixed inset-0 z-400 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in">
+          <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in">
             <div className="w-full max-w-md bg-[#0a0a0a] border border-white/10 p-10 rounded-[40px] shadow-2xl relative">
               <button
                 onClick={close}
-                className="absolute top-8 right-8 text-zinc-500 hover:text-white"
+                className="absolute top-8 right-8 text-zinc-500 hover:text-white transition-colors"
               >
                 <svg
                   width="20"
@@ -153,19 +149,17 @@ export default function Home() {
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
               </button>
-
               <h2 className="text-2xl font-black text-white italic tracking-tighter uppercase mb-1">
                 Stat <span className="text-blue-500">Scout</span>
               </h2>
-              <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-8 italic">
+              <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-8">
                 Comparando {comparing.name.replace("-", " ")} de{" "}
                 {comparing.pkmnName}
               </p>
-
               <div className="space-y-3">
                 {loading ? (
-                  <div className="py-20 text-center animate-pulse text-blue-500 font-black tracking-widest uppercase text-xs">
-                    Consultando Database...
+                  <div className="py-20 text-center animate-pulse text-blue-500 font-black">
+                    CONSULTANDO...
                   </div>
                 ) : results.length > 0 ? (
                   results.map((p: any) => (
@@ -179,67 +173,50 @@ export default function Home() {
                           className="w-12 h-12 object-contain"
                           alt="pkmn"
                         />
-                        <span className="font-black text-white uppercase text-sm italic tracking-tighter">
+                        <span className="font-black text-white uppercase text-sm italic">
                           {p.name}
                         </span>
                       </div>
                       <div className="text-right">
-                        <span className="text-lg font-black text-blue-400 leading-none">
+                        <span className="text-lg font-black text-blue-400">
                           {p.value}
                         </span>
-                        <p className="text-[8px] text-zinc-600 font-bold uppercase mt-1">
-                          Base Stat
+                        <p className="text-[8px] text-zinc-600 font-bold uppercase">
+                          Base
                         </p>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <div className="py-20 text-center flex flex-col items-center gap-4">
-                    <div className="w-12 h-12 rounded-full border-2 border-dashed border-zinc-800 flex items-center justify-center text-zinc-800 text-xl font-black">
-                      !
-                    </div>
-                    <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-widest italic text-center">
-                      Nenhum pokemon proximo com esse stat.
-                    </p>
-                  </div>
+                  <p className="py-20 text-center text-zinc-500 text-[10px] font-bold uppercase">
+                    Nenhum pokemon proximo.
+                  </p>
                 )}
               </div>
             </div>
           </div>
         )}
 
-        {/* MODAL 2: CONFIRMAÇÃO DE LIMPEZA GERAL */}
+        {/* MODAL LIMPAR */}
         {isClearModalOpen && (
-          <div className="fixed inset-0 z-300 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in">
+          <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in">
             <div className="w-full max-w-md bg-[#0d0d0d] border border-white/10 p-10 rounded-[40px] shadow-2xl text-center">
-              <div className="w-16 h-16 bg-red-600/10 text-red-500 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-red-500/20">
-                <svg
-                  width="28"
-                  height="28"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                >
-                  <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                </svg>
-              </div>
-              <h2 className="text-2xl font-black text-white mb-2 tracking-tighter uppercase leading-none">
-                Resetar Time?
+              <h2 className="text-2xl font-black text-white mb-2 uppercase">
+                Resetar?
               </h2>
-              <p className="text-zinc-500 text-sm mb-10 font-medium italic">
-                "Essa ação apagará todos os 6 slots permanentemente."
+              <p className="text-zinc-500 text-sm mb-10 italic">
+                Essa ação apagará todo o time.
               </p>
               <div className="flex gap-4">
                 <button
                   onClick={() => setIsClearModalOpen(false)}
-                  className="flex-1 px-6 py-4 bg-zinc-800 text-zinc-300 font-bold rounded-2xl hover:bg-zinc-700 transition-all"
+                  className="flex-1 px-6 py-4 bg-zinc-800 text-zinc-300 font-bold rounded-2xl"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={confirmClearStorage}
-                  className="flex-1 px-6 py-4 bg-red-600 text-white font-black rounded-2xl shadow-lg shadow-red-600/20 hover:bg-red-500 transition-all"
+                  className="flex-1 px-6 py-4 bg-red-600 text-white font-black rounded-2xl shadow-lg"
                 >
                   Confirmar
                 </button>
@@ -248,9 +225,9 @@ export default function Home() {
           </div>
         )}
 
-        {/* MODAL 3: CARD DE TIME */}
+        {/* MODAL CARD */}
         {showCard && (
-          <div className="fixed inset-0 z-200 flex items-center justify-center p-4 bg-black/95 backdrop-blur-sm animate-in fade-in">
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/95 backdrop-blur-sm animate-in fade-in">
             <div className="relative w-full max-w-2xl bg-[#0a0a0a] border border-white/10 p-12 rounded-[50px] shadow-2xl text-center">
               <button
                 onClick={() => setShowCard(false)}
@@ -275,7 +252,7 @@ export default function Home() {
                 {[...Array(6)].map((_, i) => (
                   <div
                     key={i}
-                    className="flex flex-col items-center justify-center gap-4 p-6 rounded-[2.5rem] bg-white/5 border border-white/5"
+                    className="flex flex-col items-center justify-center gap-4 p-6 rounded-[2.5rem] bg-white/5 border border-white/5 shadow-inner"
                   >
                     {teamData[i]?.pokemon ? (
                       <>
@@ -289,7 +266,7 @@ export default function Home() {
                         </span>
                       </>
                     ) : (
-                      <div className="w-20 h-20 rounded-full bg-zinc-900 border border-dashed border-zinc-800 flex items-center justify-center text-zinc-800 text-3xl font-black">
+                      <div className="w-20 h-20 rounded-full bg-zinc-900 border border-dashed border-zinc-800 flex items-center justify-center text-zinc-800 text-3xl font-black italic">
                         ?
                       </div>
                     )}
@@ -299,12 +276,6 @@ export default function Home() {
             </div>
           </div>
         )}
-
-        <footer className="mt-20 py-12 border-t border-white/5 text-center">
-          <p className="text-[10px] text-zinc-700 font-black uppercase tracking-[0.5em]">
-            Move Tutor Pro © 2026 • Pedro's Tactical Lab
-          </p>
-        </footer>
       </div>
     </main>
   );
