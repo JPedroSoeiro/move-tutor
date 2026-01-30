@@ -1,97 +1,278 @@
-import { OFFENSIVE_CHART, WEAKNESS_CHART } from "@/constants/typeChart";
+import { WEAKNESS_CHART, TYPE_CHART } from "@/constants/typeChart";
 
-// Mapeamento para o Nemesis Finder sugerir counters baseados na fraqueza
-const COUNTER_SUGGESTIONS: Record<string, string[]> = {
-  fire: ["Gyarados", "Garchomp", "Tyranitar"],
-  water: ["Rotom-Wash", "Venusaur", "Zapdos"],
-  grass: ["Heatran", "Corviknight", "Dragonite"],
-  electric: ["Excadrill", "Garchomp", "Mamoswine"],
-  ice: ["Scizor", "Lucario", "Arcanine"],
-  fighting: ["Togekiss", "Gengar", "Gliscor"],
-  poison: ["Steelix", "Excadrill", "Gengar"],
-  ground: ["Corviknight", "Rotom-Wash", "Rillaboom"],
-  flying: ["Tyranitar", "Rotom-Frost", "Magnezone"],
-  psychic: ["Tyranitar", "Scizor", "Hydreigon"],
-  bug: ["Heatran", "Volcarona", "Talonflame"],
-  rock: ["Lucario", "Garchomp", "Steelix"],
-  ghost: ["Tyranitar", "Bisharp", "Hydreigon"],
-  dragon: ["Sylveon", "Mamoswine", "Togekiss"],
-  dark: ["Lucario", "Togekiss", "Conkeldurr"],
-  steel: ["Heatran", "Lucario", "Garchomp"],
-  fairy: ["Scizor", "Excadrill", "Gengar"],
+export const COUNTER_SUGGESTIONS: Record<string, string[]> = {
+  fire: [
+    "Gyarados",
+    "Garchomp",
+    "Tyranitar",
+    "Dondozo",
+    "Gastrodon",
+    "Azumarill",
+    "Kingdra",
+    "Quagsire",
+  ],
+  water: [
+    "Rotom-Wash",
+    "Venusaur",
+    "Ferrothorn",
+    "Meowscarada",
+    "Rillaboom",
+    "Amoonguss",
+    "Serperior",
+    "Breloom",
+  ],
+  grass: [
+    "Volcarona",
+    "Corviknight",
+    "Dragonite",
+    "Skeledirge",
+    "Scizor",
+    "Talonflame",
+    "Salazzle",
+    "Ceruledge",
+  ],
+  electric: [
+    "Excadrill",
+    "Garchomp",
+    "Mamoswine",
+    "Clodsire",
+    "Gastrodon",
+    "Hippowdon",
+    "Steelix",
+    "Nidoking",
+  ],
+  ice: [
+    "Scizor",
+    "Lucario",
+    "Arcanine",
+    "Kingambit",
+    "Metagross",
+    "Blaziken",
+    "Volcarona",
+    "Magmortar",
+  ],
+  fighting: [
+    "Togekiss",
+    "Gengar",
+    "Gliscor",
+    "Dragapult",
+    "Mimikyu",
+    "Skeledirge",
+    "Gardevoir",
+    "Corviknight",
+  ],
+  poison: [
+    "Steelix",
+    "Excadrill",
+    "Gengar",
+    "Metagross",
+    "Garchomp",
+    "Glimmora",
+    "Kingambit",
+    "Clodsire",
+  ],
+  ground: [
+    "Corviknight",
+    "Rotom-Wash",
+    "Rillaboom",
+    "Gyarados",
+    "Venusaur",
+    "Togekiss",
+    "Pelipper",
+    "Meowscarada",
+  ],
+  flying: [
+    "Tyranitar",
+    "Magnezone",
+    "Mamoswine",
+    "Rotom-Wash",
+    "Garganacl",
+    "Aerodactyl",
+    "Electivire",
+    "Glimmora",
+  ],
+  psychic: [
+    "Tyranitar",
+    "Scizor",
+    "Hydreigon",
+    "Kingambit",
+    "Bisharp",
+    "Gholdengo",
+    "Grimmsnarl",
+    "Umbreon",
+  ],
+  bug: [
+    "Volcarona",
+    "Talonflame",
+    "Ceruledge",
+    "Arcanine",
+    "Corviknight",
+    "Staraptor",
+    "Skeledirge",
+    "Salamence",
+  ],
+  rock: [
+    "Lucario",
+    "Garchomp",
+    "Steelix",
+    "Metagross",
+    "Conkeldurr",
+    "Ferrothorn",
+    "Quaquaval",
+    "Machamp",
+  ],
+  ghost: [
+    "Tyranitar",
+    "Bisharp",
+    "Hydreigon",
+    "Kingambit",
+    "Grimmsnarl",
+    "Gholdengo",
+    "Zoroark-Hisui",
+    "Umbreon",
+  ],
+  dragon: [
+    "Sylveon",
+    "Mamoswine",
+    "Togekiss",
+    "Gardevoir",
+    "Azumarill",
+    "Garchomp",
+    "Dragapult",
+    "Baxcalibur",
+  ],
+  dark: [
+    "Lucario",
+    "Togekiss",
+    "Conkeldurr",
+    "Annihilape",
+    "Grimmsnarl",
+    "Sylveon",
+    "Clefable",
+    "Breloom",
+  ],
+  steel: [
+    "Volcarona",
+    "Lucario",
+    "Garchomp",
+    "Skeledirge",
+    "Arcanine",
+    "Excadrill",
+    "Blaziken",
+    "Infernape",
+  ],
+  fairy: [
+    "Scizor",
+    "Excadrill",
+    "Gengar",
+    "Metagross",
+    "Gholdengo",
+    "Kingambit",
+    "Toxapex",
+    "Amoonguss",
+  ],
 };
 
 export function useTeamAnalysis(teamData: Record<number, any>) {
-  // 1. LÓGICA DE COBERTURA (CORRIGIDA)
-  const getMissingCoverage = () => {
-    const slots = Object.values(teamData);
-    if (slots.length === 0) return [];
-
-    // Pega todos os tipos de ataques selecionados no time todo
-    const activeMoveTypes = slots.flatMap(
-      (slot: any) =>
-        slot.selectedMoves
-          ?.filter((m: any) => m !== null)
-          .map((m: any) => m.type.name) || [],
-    );
-
-    const covered = new Set<string>();
-    activeMoveTypes.forEach((type) => {
-      OFFENSIVE_CHART[type]?.forEach((target) => covered.add(target));
-    });
-
-    // Retorna tipos que NENHUM golpe do seu time bate Super Efetivo
-    return Object.keys(OFFENSIVE_CHART).filter((type) => !covered.has(type));
-  };
-
-  // 2. AMEAÇAS DEFENSIVAS (SOMA ACUMULADA)
-  const getDefensiveWeaknesses = (): [string, number][] => {
-    const threatScores: Record<string, number> = {};
-    const slots = Object.values(teamData).filter((s) => s.pokemon);
-
-    if (slots.length === 0) return [];
-
-    // Inicializa todos os tipos com score 0
-    Object.keys(OFFENSIVE_CHART).forEach((type) => (threatScores[type] = 0));
-
-    slots.forEach((slot: any) => {
+  const getDefensiveWeaknesses = () => {
+    const counts: Record<string, number> = {};
+    Object.values(teamData).forEach((slot: any) => {
+      if (!slot.pokemon) return;
       slot.pokemon.types.forEach((t: any) => {
-        const typeName = t.type.name;
-        // Para cada tipo que esse Pokémon é fraco, somamos 1 ao score global de ameaça
-        WEAKNESS_CHART[typeName]?.forEach((weakAgainst: string) => {
-          threatScores[weakAgainst] = (threatScores[weakAgainst] || 0) + 1;
+        const typeWeaknesses = WEAKNESS_CHART[t.type.name] || [];
+        typeWeaknesses.forEach((w: string) => {
+          counts[w] = (counts[w] || 0) + 1;
         });
       });
     });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  };
 
-    // Retorna apenas tipos que representam ameaça (score > 0) ordenados pelo mais crítico
-    return Object.entries(threatScores)
-      .filter(([_, score]) => score > 0)
-      .sort((a, b) => b[1] - a[1]);
+  const getMissingCoverage = () => {
+    // PROTEÇÃO: Garante que TYPE_CHART exista antes de usar Object.keys
+    if (!TYPE_CHART) return [];
+
+    const coveredTypes = new Set<string>();
+    Object.values(teamData).forEach((slot: any) => {
+      if (slot.selectedMoves) {
+        slot.selectedMoves.forEach((move: any) => {
+          if (move && move.type) {
+            const effectiveAgainst = TYPE_CHART[move.type.name] || [];
+            effectiveAgainst.forEach((t: string) => coveredTypes.add(t));
+          }
+        });
+      }
+    });
+    return Object.keys(TYPE_CHART).filter((type) => !coveredTypes.has(type));
+  };
+
+  const getNemesisData = () => {
+    const weaknesses = getDefensiveWeaknesses();
+    if (weaknesses.length === 0) return { suggestions: [], advice: null };
+
+    const topWeakness = weaknesses[0][0];
+    const suggestions = COUNTER_SUGGESTIONS[topWeakness] || [];
+    const slots = Object.entries(teamData);
+
+    if (slots.length >= 6) {
+      const candidates = slots.map(([id, data]) => {
+        let score = 0;
+        const types = data.pokemon.types.map((t: any) => t.type.name);
+
+        types.forEach((t: string) => {
+          if (WEAKNESS_CHART[t]?.includes(topWeakness)) score += 20;
+        });
+
+        weaknesses.forEach(([wType, wScore]) => {
+          types.forEach((t: string) => {
+            if (WEAKNESS_CHART[t]?.includes(wType)) score += wScore;
+          });
+        });
+
+        // PROTEÇÃO: Skeledirge e Dracovish são obrigatórios
+        if (
+          ["skeledirge", "dracovish"].includes(data.pokemon.name.toLowerCase())
+        ) {
+          score -= 100;
+        }
+
+        return { id, name: data.pokemon.name, score };
+      });
+
+      const weakestLink = candidates.sort((a, b) => b.score - a.score)[0];
+
+      return {
+        suggestions,
+        advice: {
+          replace: weakestLink.name,
+          index: Number(weakestLink.id),
+          reason: `ele é o membro mais vulnerável defensivamente neste time`,
+        },
+      };
+    }
+    return { suggestions, advice: null };
   };
 
   const getSynergyTips = () => {
-    const tips = [];
-    const weaknesses = getDefensiveWeaknesses();
-    if (weaknesses.length > 0 && weaknesses[0][1] >= 3) {
+    const tips: string[] = [];
+    const pkmnNames = Object.values(teamData)
+      .map((s: any) => s.pokemon?.name?.toLowerCase())
+      .filter(Boolean);
+    if (pkmnNames.includes("skeledirge") && pkmnNames.includes("dracovish")) {
       tips.push(
-        `⚠️ CRÍTICO: Seu time tem ${weaknesses[0][1]} Pokémons fracos contra ${weaknesses[0][0].toUpperCase()}.`,
+        "Sinergia Core: Skeledirge e Dracovish cobrem bem fraquezas mútuas.",
       );
     }
     return tips;
   };
 
-  const getNemesisFinder = () => {
-    const weaknesses = getDefensiveWeaknesses();
-    if (weaknesses.length === 0) return [];
-    const topWeakness = weaknesses[0][0];
-    return COUNTER_SUGGESTIONS[topWeakness] || [];
-  };
+  const nemesisData = getNemesisData();
 
   return {
     missing: getMissingCoverage(),
     defWeaknesses: getDefensiveWeaknesses(),
     tips: getSynergyTips(),
-    nemesis: getNemesisFinder(),
+    nemesis: nemesisData.suggestions,
+    replacementAdvice: nemesisData.advice,
   };
 }
