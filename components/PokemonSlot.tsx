@@ -257,7 +257,14 @@ export function PokemonSlot({
             </div>
 
             {/* RADAR CHART FLUTUANTE */}
-            <div className="invisible group-hover/radar:visible absolute z-100] bottom-full left-1/2 -translate-x-1/2 mb-6 animate-in zoom-in-95 duration-200">
+            <div
+              className="
+  invisible opacity-0 
+  group-hover/radar:visible group-hover/radar:opacity-100 
+  absolute z-100 bottom-full left-1/2 -translate-x-1/2 mb-6 
+  transition-all duration-150 ease-in-out pointer-events-none
+"
+            >
               <RadarChart stats={pokemon.stats} />
             </div>
           </div>
