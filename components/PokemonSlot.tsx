@@ -104,8 +104,8 @@ export function PokemonSlot({
       isShiny,
       // Calcula tipos dos ataques para o dashboard
       moveTypes: (updatedFields.selectedMoves || selectedMoves)
-        .filter((m: any) => m !== null)
-        .map((m: any) => m.type.name),
+    .filter((m: any) => m !== null && m.type) 
+    .map((m: any) => m.type?.name || 'unknown'), 
       ...updatedFields,
     };
     onUpdate(index, finalData);

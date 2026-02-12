@@ -180,49 +180,38 @@ export default function Home() {
     window.location.reload();
   };
 
-  const handleSaveTeam = async () => {
-    const token = localStorage.getItem("@MoveTutor:token");
+const handleSaveTeam = async (e: any, data: any) => {
+  e.preventDefault();
+  
+  try {
+    const storedUser = JSON.parse(localStorage.getItem("@MoveTutor:user") || "{}");
+    
+    const payload = {
+      name: data.name,
+      pokemons: data.pokemons,
+      user_id: storedUser.id,
+      author_name: storedUser.full_name
+    };
 
-    if (!token) {
-      sessionStorage.setItem("@MoveTutor:pendingTeam", JSON.stringify(teamData));
-      router.push("/login");
-      return;
-    }
-
-    try {
-      const payload = {
-        name: "Meu Time VGC", 
-        pokemons: Object.values(teamData).map((slot: any) => ({
-          pokemon_id: slot.pokemon.id,
-          name: slot.pokemon.name,
-          item: slot.selectedItem?.name || null,
-          ability: slot.selectedAbility?.name || null,
-          nature: slot.nature,
-          moves: slot.selectedMoves?.filter((m: any) => m !== null).map((m: any) => m.name) || []
-        }))
-      };
-
-      await teamService.saveTeam(payload);
-      alert("Time sincronizado com o Supabase!");
-    } catch (error) {
-      alert("Erro ao salvar no back-end local.");
-    }
-  };
+    await teamService.saveTeam(payload);
+    alert("Build enviada com sucesso!");
+  } catch (error) {
+    console.error("Erro ao publicar:", error);
+  }
+};
 
   const handleImportShowdown = async () => {
   if (!importText.trim()) return;
   setIsImporting(true);
 
   const parsed = parseShowdown(importText);
-  const newTeamData = { ...teamData }; // Mantém o que já existe ou começa limpo
+  const newTeamData = { ...teamData };
 
   try {
-    // Percorre todas as chaves (0 a 5) geradas pelo parser
     for (const key of Object.keys(parsed)) {
       const idx = parseInt(key);
       const basicInfo = parsed[key];
       
-      // Busca os dados reais para cada Pokémon do texto
       const fullPokemon = await pokemonService.getPokemonByName(basicInfo.pokemon.name);
       
       newTeamData[idx] = {
@@ -258,7 +247,7 @@ export default function Home() {
           </div>
           <div className="flex gap-3">
             <button
-              onClick={handleSaveTeam}
+              onClick={(e) => handleSaveTeam(e, teamData)}
               className="px-6 py-4 bg-green-600/20 text-green-500 border border-green-500/20 font-black rounded-2xl hover:bg-green-600 hover:text-white transition-all"
             >
               SALVAR TIME

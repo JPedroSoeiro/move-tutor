@@ -18,18 +18,14 @@ export function Sidebar() {
     { name: "Feed", path: "/feed" },
   ];
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem("@MoveTutor:user");
-    if (storedUser) {
-      try {
-        const parsed = JSON.parse(storedUser);
-        setUser(parsed);
-      } catch (e) {
-        console.error("Erro ao ler dados do treinador", e);
-      }
-    }
-  }, [pathname]);
-
+useEffect(() => {
+  const storedUser = localStorage.getItem("@MoveTutor:user");
+  if (storedUser) {
+    const parsed = JSON.parse(storedUser);
+    console.log("Usuário carregado na Sidebar:", parsed); 
+    setUser(parsed);
+  }
+}, [pathname]);
   const handleLogout = () => {
     authService.logout();
     setUser(null);
@@ -57,30 +53,36 @@ export function Sidebar() {
       </nav>
 
       <div className={styles.footer}>
-        {user ? (
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 px-2">
-              <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-[10px] font-black border border-white/10 text-white shadow-lg shadow-blue-500/20">
-                {/* Lógica ultra-segura: Pega a primeira letra disponível ou 'T' de Treinador */}
-                {(user.full_name || user.name || "T").substring(0, 2).toUpperCase()}
-              </div>
-              <div className="flex flex-col min-w-0">
-                <span className="text-[9px] text-zinc-500 font-black uppercase tracking-widest">Treinador</span>
-                <span className="text-sm font-black text-white truncate">
-                  {user.full_name || user.name || "Mestre Pokémon"}
-                </span>
-              </div>
-            </div>
-            <button onClick={handleLogout} className={styles.logoutBtn}>
-              Encerrar Sessão
-            </button>
-          </div>
-        ) : (
-          <Link href="/login" className={styles.loginBtn}>
-            Acessar Lab
-          </Link>
-        )}
+  {user ? (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3 px-2">
+        <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-[10px] font-black border border-white/10 text-white shadow-lg shadow-blue-500/20">
+          {/* Abreviação do nome do usuário */}
+          {(user.full_name || user.name || "T").substring(0, 2).toUpperCase()}
+        </div>
+        <div className="flex flex-col min-w-0">
+          {/* Aqui trocamos o texto estático "Treinador" pelo nome do usuário */}
+          <div className="flex flex-col min-w-0">
+         {/* Ocupa o lugar do antigo "Treinador" com o nome real */}
+         <span className="text-[10px] text-white font-black uppercase tracking-widest truncate">
+            {user?.full_name || user?.name || "Treinador"}
+         </span>
+         <span className="text-[9px] text-zinc-500 font-bold italic">
+            Mestre Pokémon
+         </span>
+         </div>
+        </div>
       </div>
+      <button onClick={handleLogout} className={styles.logoutBtn}>
+        Encerrar Sessão
+      </button>
+    </div>
+  ) : (
+    <Link href="/login" className={styles.loginBtn}>
+      Acessar Lab
+    </Link>
+  )}
+</div>
     </aside>
   );
 }

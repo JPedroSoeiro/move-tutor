@@ -1,13 +1,16 @@
-import moveTutorApi from "./moveTutorApi";
+
+import { moveTutorApi } from "./moveTutorApi";
 
 export const teamService = {
   async saveTeam(teamData: any) {
-    const response = await moveTutorApi.post("/teams", teamData);
-    return response.data;
+  // Tente esta variação para limpar qualquer erro de concatenação do Axios
+  const response = await moveTutorApi.post("teams/save", teamData); 
+  return response.data;
   },
 
   async getAllTeams() {
-    const response = await moveTutorApi.get("/teams");
-    return response.data; 
-  }
+    // Mesma lógica para o feed
+    const response = await moveTutorApi.get("/teams/feed");
+    return response.data;
+  },
 };
