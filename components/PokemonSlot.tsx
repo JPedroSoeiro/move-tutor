@@ -267,6 +267,18 @@ export function PokemonSlot({
                     </div>
                   )}
                 </div>
+                
+                {/* TIPAGEM ADICIONADA AQUI */}
+                <div className="flex gap-1.5 mt-1">
+                  {pokemon.types.map((t: any) => (
+                    <span 
+                      key={t.type.name} 
+                      className="text-[9px] font-black uppercase px-2 py-0.5 rounded-md border border-white/5 bg-zinc-800/80 text-zinc-100"
+                    >
+                      {t.type.name}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
             <div className="invisible opacity-0 group-hover/radar:visible group-hover/radar:opacity-100 absolute z-100 bottom-full left-1/2 -translate-x-1/2 mb-6 transition-all duration-150 pointer-events-none">
