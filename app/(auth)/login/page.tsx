@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { authService } from "@/services/authService";
+import { signIn } from "next-auth/react";
 import Link from "next/link";
 
 export default function LoginPage() {
@@ -13,29 +13,44 @@ export default function LoginPage() {
   const router = useRouter();
 
   // MANTENHA APENAS ESTA VERSÃO DO handleLogin
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+const handleLogin = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setError("");
+  setLoading(true);
 
-    try {
-      // O "enviado" aqui são as credenciais para o seu back-end local
-      await authService.login(email, password);
-      
-      // Lógica de redirecionamento: Prioriza o rascunho pendente
-      const hasPendingTeam = sessionStorage.getItem("@MoveTutor:pendingTeam");
-      
-      if (hasPendingTeam) {
-        router.push("/team-builder");
-      } else {
-        router.push("/feed");
-      }
-    } catch (err: any) {
-      setError(err.response?.data?.error || "Credenciais inválidas");
-    } finally {
+  try {
+    // O NextAuth assume o controle. Ele vai chamar aquela rota [...nextauth] 
+    // que criamos, que por sua vez chama o seu back-end na 3001
+    const result = await signIn("credentials", {
+      email,
+      password,
+      redirect: false, // Desativamos o redirect automático para tratar o sessionStorage
+    });
+
+    if (result?.error) {
+      setError("Credenciais inválidas");
       setLoading(false);
+      return;
     }
-  };
+
+    // Lógica de redirecionamento: Prioriza o rascunho pendente
+    const hasPendingTeam = sessionStorage.getItem("@MoveTutor:pendingTeam");
+    
+    if (hasPendingTeam) {
+      router.push("/team-builder");
+    } else {
+      router.push("/feed");
+    }
+    
+    // Opcional: recarregar a página para garantir que a Sidebar capture a nova sessão
+    router.refresh(); 
+
+  } catch (err: any) {
+    setError("Erro ao conectar com o servidor");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-zinc-950 p-4">

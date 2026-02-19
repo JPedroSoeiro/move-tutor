@@ -1,38 +1,20 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
+import { Providers } from "./providers";
 import { Sidebar } from "@/components/layout/Sidebar";
+import "./globals.css";
 
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-});
-
-export const metadata: Metadata = {
-  title: "Move Tutor",
-  description: "Master the move, dominate the battle.",
-};
-
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR">
-      <body className={`${inter.variable} antialiased bg-zinc-950 text-white`}>
-        <div className="flex min-h-screen">
-          <Sidebar />
-          
-          <main 
-            className="flex-1 min-h-screen overflow-x-hidden" 
-            style={{ marginLeft: '240px' }} 
-          >
-            <div className="p-4 md:p-8">
+    <html lang="pt-br">
+      <body>
+        <Providers>
+          <div className="flex">
+            <Sidebar />
+            <main className="flex-1 p-8 bg-[#050505] min-h-screen"
+            style={{ marginLeft: '240px' }} >
               {children}
-            </div>
-          </main>
-        </div>
+            </main>
+          </div>
+        </Providers>
       </body>
     </html>
   );

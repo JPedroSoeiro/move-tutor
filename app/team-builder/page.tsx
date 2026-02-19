@@ -9,6 +9,7 @@ import { pokemonService } from "@/services/pokemonService";
 import html2canvas from "html2canvas";
 import { useRouter } from "next/navigation";
 import { teamService } from "@/services/teamService";
+import { useSession } from "next-auth/react";
 
 // 1. PARSER FORA DO COMPONENTE (Evita erros de escopo e redeclaração)
 const parseShowdown = (text: string) => {
@@ -61,13 +62,18 @@ export default function Home() {
   const [importText, setImportText] = useState("");
   const [isImporting, setIsImporting] = useState(false);
   const [showCopyAlert, setShowCopyAlert] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [teamName, setTeamName] = useState("");
+  const { data: session } = useSession();
+  const [loginAlert, setLoginAlert] = useState(false);
 
   const cardRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   // 2. HOOKS DE LÓGICA (Mantidos conforme sua versão original)
   const { missing, defWeaknesses, tips, nemesis, replacementAdvice } = useTeamAnalysis(teamData);
-  const { comparing, results, loading, findSimilar, close } = useStatScout();
+  const { comparing, results, findSimilar, close } = useStatScout();
 
   // 3. EFEITOS (CARREGAMENTO INICIAL)
   useEffect(() => {
@@ -180,25 +186,7 @@ export default function Home() {
     window.location.reload();
   };
 
-const handleSaveTeam = async (e: any, data: any) => {
-  e.preventDefault();
-  
-  try {
-    const storedUser = JSON.parse(localStorage.getItem("@MoveTutor:user") || "{}");
-    
-    const payload = {
-      name: data.name,
-      pokemons: data.pokemons,
-      user_id: storedUser.id,
-      author_name: storedUser.full_name
-    };
 
-    await teamService.saveTeam(payload);
-    alert("Build enviada com sucesso!");
-  } catch (error) {
-    console.error("Erro ao publicar:", error);
-  }
-};
 
   const handleImportShowdown = async () => {
   if (!importText.trim()) return;
@@ -231,6 +219,61 @@ const handleSaveTeam = async (e: any, data: any) => {
   }
 };
 
+const handleSaveTeam = async (e: React.FormEvent | undefined, payload: any) => {
+  if (e) e.preventDefault();
+  setLoading(true);
+
+  try {
+    // Chama o service enviando o token automaticamente
+    await teamService.saveTeam(payload);
+    
+    // Limpa o rascunho pendente após salvar com sucesso
+    sessionStorage.removeItem("@MoveTutor:pendingTeam");
+    
+    router.push("/feed");
+    router.refresh();
+  } catch (error: any) {
+    console.error("Erro ao salvar:", error.response?.data);
+    alert("Erro ao publicar build. Verifique sua conexão.");
+  } finally {
+    setLoading(false);
+  }
+};
+
+const handleConfirmSave = async () => {
+  if (!teamName.trim()) return alert("O esquadrão precisa de um nome!");
+  
+  const pokemonsArray = Object.values(teamData)
+    .filter((p: any) => p && p.pokemon)
+    .map((p: any) => ({
+      pokemon_id: p.pokemon.id,
+      name: p.pokemon.name,
+      item: p.selectedItem?.name || "Nenhum",
+      ability: p.selectedAbility?.name || "Padrão",
+      moves: p.selectedMoves?.map((m: any) => m.name) || []
+    }));
+
+  const payload = {
+    team_name: teamName, 
+    pokemons: pokemonsArray,
+    regulation: "Regulation G"
+  };
+
+  await handleSaveTeam(undefined, payload);
+  setIsModalOpen(false);
+  setTeamName(""); 
+};
+
+const handlePublishClick = () => {
+  if (!session) {
+    setLoginAlert(true);
+    // Esconde o alerta automaticamente após 3 segundos
+    setTimeout(() => setLoginAlert(false), 3000);
+    return;
+  }
+  setIsModalOpen(true);
+};
+
 
   return (
     <main className="mb-10">
@@ -246,12 +289,16 @@ const handleSaveTeam = async (e: any, data: any) => {
             </p>
           </div>
           <div className="flex gap-3">
-            <button
-              onClick={(e) => handleSaveTeam(e, teamData)}
-              className="px-6 py-4 bg-green-600/20 text-green-500 border border-green-500/20 font-black rounded-2xl hover:bg-green-600 hover:text-white transition-all"
-            >
-              SALVAR TIME
-            </button>
+          <button 
+            onClick={handlePublishClick}
+            className={`p-4 rounded-2xl font-black uppercase italic transition-all text-white shadow-lg ${
+              !session 
+                ? "bg-zinc-800 cursor-not-allowed opacity-50 shadow-none hover:bg-zinc-700" 
+                : "bg-blue-600 hover:bg-blue-500 shadow-blue-600/20"
+            }`}
+          >
+            {loading ? "Processando..." : "Publicar no Feed"}
+          </button>
             <button
               onClick={() => setShowCard(true)}
               className="px-6 py-4 bg-blue-600 text-white font-black rounded-2xl shadow-lg hover:bg-blue-500 transition-all active:scale-95"
@@ -528,9 +575,51 @@ const handleSaveTeam = async (e: any, data: any) => {
           </div>
         )}
 
+        {isModalOpen && (
+          <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-4">
+            <div className="bg-[#0a0a0a] border border-white/10 rounded-[40px] p-10 max-w-md w-full shadow-2xl shadow-blue-500/20">
+              <h2 className="text-3xl font-black italic uppercase text-white mb-2 tracking-tighter">
+                NOMEAR <span className="text-blue-500">SQUAD</span>
+              </h2>
+              <p className="text-zinc-500 text-[9px] font-bold uppercase tracking-widest mb-8">
+                Identifique sua Build para o Tactical Feed
+              </p>
+              
+              <input 
+                type="text"
+                value={teamName}
+                onChange={(e) => setTeamName(e.target.value)}
+                placeholder="EX: CALYREX SWEEP..."
+                className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white font-bold placeholder:text-zinc-800 focus:outline-none focus:border-blue-500/50 transition-all mb-8 uppercase italic"
+                autoFocus
+              />
+
+              <div className="flex gap-4">
+                <button 
+                  onClick={() => setIsModalOpen(false)}
+                  className="flex-1 px-6 py-4 rounded-2xl border border-white/5 text-zinc-500 font-black uppercase text-[10px] hover:bg-white/5 transition-all"
+                >
+                  Abortar
+                </button>
+                <button 
+                  onClick={handleConfirmSave} // Esta função agora faz a conversão do teamData
+                  className="flex-1 px-6 py-4 rounded-2xl bg-blue-600 text-white font-black uppercase text-[10px] hover:bg-blue-500 transition-all"
+                >
+                  Confirmar e Publicar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <footer className="mt-20 py-12 border-t border-white/5 text-center text-[10px] text-zinc-700 font-black uppercase tracking-[0.5em]">
           Move Tutor Pro • Tactical Lab • 2026
         </footer>
+        {loginAlert && (
+          <div className="fixed top-10 left-1/2 -translate-x-1/2 z-100 bg-red-600 text-white px-8 py-4 rounded-2xl font-black uppercase italic shadow-2xl shadow-red-600/20 border border-white/10 animate-bounce">
+            ⚠ ACESSO NEGADO: FAÇA LOGIN PARA PUBLICAR
+          </div>
+        )}
       </div>
     </main>
   );

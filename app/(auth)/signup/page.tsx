@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { authService } from "@/services/authService";
 import Link from "next/link";
+import { signIn } from "next-auth/react";
 
 export default function SignUpPage() {
   const [email, setEmail] = useState("");
@@ -13,23 +14,40 @@ export default function SignUpPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
 
-    try {
-      // O "enviado" aqui são os dados que o back-end espera para criar o profile
-      await authService.signUp(email, password, fullName);
-      
-      // Após o cadastro, levamos para o login para garantir que o fluxo de sessão ocorra bem
+
+const handleSignUp = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setError("");
+  setLoading(true);
+  try {
+    // 1. Cria a conta no seu Back-end (Node.js + Supabase)
+    await authService.signUp(email, password, fullName);
+    
+    // 2. O PULO DO GATO: Loga o usuário automaticamente
+    // Isso evita que ele tenha que ir para a tela de login
+    const result = await signIn("credentials", {
+      email,
+      password,
+      redirect: false, // Mantemos falso para rodar o refresh antes de ir pro feed
+    });
+
+    if (result?.error) {
+      // Se o cadastro deu certo mas o login automático falhou, aí sim manda pro login
       router.push("/login");
-    } catch (err: any) {
-      setError(err.response?.data?.error || "Erro ao realizar cadastro");
-    } finally {
-      setLoading(false);
+      return;
     }
-  };
+
+    // 3. Sucesso total: atualiza a Sidebar e vai para o Feed
+    router.refresh(); 
+    router.push("/feed");
+
+  } catch (err: any) {
+    setError(err.response?.data?.error || "Erro ao realizar cadastro");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-zinc-950 p-4">

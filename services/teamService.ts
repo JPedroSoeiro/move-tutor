@@ -1,16 +1,29 @@
-
 import { moveTutorApi } from "./moveTutorApi";
+import { getSession } from "next-auth/react";
 
 export const teamService = {
   async saveTeam(teamData: any) {
-  // Tente esta variação para limpar qualquer erro de concatenação do Axios
-  const response = await moveTutorApi.post("teams/save", teamData); 
-  return response.data;
+    const session = await getSession();
+    const response = await moveTutorApi.post("/teams/save", teamData, {
+      headers: { Authorization: `Bearer ${session?.accessToken}` }
+    });
+    return response.data;
   },
 
   async getAllTeams() {
-    // Mesma lógica para o feed
-    const response = await moveTutorApi.get("/teams/feed");
+    const session = await getSession();
+    const response = await moveTutorApi.get("/teams/feed", {
+      headers: { Authorization: `Bearer ${session?.accessToken}` }
+    });
     return response.data;
   },
+
+  // Nova função para deletar posts
+  async deleteTeam(teamId: string) {
+    const session = await getSession();
+    const response = await moveTutorApi.delete(`/teams/${teamId}`, {
+      headers: { Authorization: `Bearer ${session?.accessToken}` }
+    });
+    return response.data;
+  }
 };
