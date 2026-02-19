@@ -10,7 +10,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="flex">
             <Sidebar />
             <main className="flex-1 p-8 bg-[#050505] min-h-screen"
-            style={{ marginLeft: '240px' }} >
+            style={{ marginTop: '80px' }} >
               {children}
             </main>
           </div>

@@ -288,30 +288,38 @@ const handlePublishClick = () => {
               Tactical Lab Edition
             </p>
           </div>
-          <div className="flex gap-3">
-          <button 
-            onClick={handlePublishClick}
-            className={`p-4 rounded-2xl font-black uppercase italic transition-all text-white shadow-lg ${
-              !session 
-                ? "bg-zinc-800 cursor-not-allowed opacity-50 shadow-none hover:bg-zinc-700" 
-                : "bg-blue-600 hover:bg-blue-500 shadow-blue-600/20"
-            }`}
-          >
-            {loading ? "Processando..." : "Publicar no Feed"}
-          </button>
-            <button
-              onClick={() => setShowCard(true)}
-              className="px-6 py-4 bg-blue-600 text-white font-black rounded-2xl shadow-lg hover:bg-blue-500 transition-all active:scale-95"
-            >
-              GERAR CARD
-            </button>
-            <button
-              onClick={() => setIsClearModalOpen(true)}
-              className="px-6 py-4 bg-red-600/10 text-red-500 border border-red-500/20 font-black rounded-2xl hover:bg-red-600 hover:text-white transition-all"
-            >
-              LIMPAR TUDO
-            </button>
-          </div>
+          <div className="flex justify-center">
+  <div className="inline-flex rounded-2xl shadow-2xl overflow-hidden border border-white/5 bg-zinc-900/50 backdrop-blur-sm">
+    
+    {/* Ação Principal: Publicar */}
+    <button 
+      onClick={handlePublishClick}
+      className={`px-8 py-5 font-black uppercase italic transition-all text-[10px] tracking-widest border-r border-white/5 ${
+        !session 
+          ? "bg-zinc-800 text-zinc-500 cursor-not-allowed" 
+          : "bg-blue-600 text-white hover:bg-blue-500"
+      }`}
+    >
+      {loading ? "Processando..." : "Publicar Feed"}
+    </button>
+
+    {/* Ação Visual: Gerar Card */}
+    <button
+      onClick={() => setShowCard(true)}
+      className="px-8 py-5 bg-zinc-900 text-white font-black text-[10px] tracking-widest uppercase hover:bg-zinc-800 transition-all border-r border-white/5 active:bg-blue-600/20"
+    >
+      Gerar Card
+    </button>
+
+    {/* Ação de Perigo: Limpar */}
+    <button
+      onClick={() => setIsClearModalOpen(true)}
+      className="px-8 py-5 bg-zinc-900 text-red-500 font-black text-[10px] tracking-widest uppercase hover:bg-red-600 hover:text-white transition-all active:scale-95"
+    >
+      Limpar Tudo
+    </button>
+  </div>
+</div>
         </header>
 
         {/* GRID DE SLOTS */}
@@ -329,20 +337,23 @@ const handlePublishClick = () => {
           ))}
         </div>
 
-        <div className="flex justify-center mb-20 gap-3">
-          <button
-            onClick={exportToShowdown}
-            className="px-6 py-3 bg-white text-black font-black text-xs rounded-xl shadow-lg tracking-widest uppercase hover:bg-zinc-200 transition-all"
-          >
-            EXPORTAR SHOWDOWN
-          </button>
-          <button
-            onClick={() => setIsImportModalOpen(true)}
-            className="px-6 py-3 bg-white text-black font-black text-xs rounded-xl shadow-lg tracking-widest uppercase hover:bg-zinc-200 transition-all"
-          >
-            IMPORTAR SHOWDOWN
-          </button>
-        </div>
+        <div className="flex justify-center mb-20">
+  <div className="inline-flex rounded-xl shadow-2xl overflow-hidden border border-white/5">
+    <button
+      onClick={exportToShowdown}
+      className="px-8 py-4 bg-white text-black font-black text-[10px] tracking-[0.2em] uppercase hover:bg-zinc-200 transition-all border-r border-black/10 flex items-center gap-2"
+    >
+      <span className="opacity-50 italic">↑</span> EXPORTAR
+    </button>
+
+    <button
+      onClick={() => setIsImportModalOpen(true)}
+      className="px-8 py-4 bg-white text-black font-black text-[10px] tracking-[0.2em] uppercase hover:bg-zinc-200 transition-all flex items-center gap-2"
+    >
+      IMPORTAR <span className="opacity-50 italic">↓</span>
+    </button>
+  </div>
+</div>
 
         {/* DASHBOARD */}
         <AnalysisDashboard
