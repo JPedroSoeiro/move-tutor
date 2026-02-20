@@ -10,20 +10,50 @@ export const teamService = {
     return response.data;
   },
 
-  async getAllTeams() {
+async getAllTeams() {
+  let headers = {};
+  try {
     const session = await getSession();
-    const response = await moveTutorApi.get("/teams/feed", {
-      headers: { Authorization: `Bearer ${session?.accessToken}` }
-    });
-    return response.data;
-  },
+    if (session?.accessToken) {
+      headers = { Authorization: `Bearer ${session.accessToken}` };
+    }
+  } catch (e) {
+    console.log("Acesso como visitante");
+  }
 
-  // Nova função para deletar posts
+  const response = await moveTutorApi.get("/teams/feed", { headers });
+  return response.data;
+},
+
   async deleteTeam(teamId: string) {
     const session = await getSession();
     const response = await moveTutorApi.delete(`/teams/${teamId}`, {
       headers: { Authorization: `Bearer ${session?.accessToken}` }
     });
     return response.data;
+  },
+
+  async getUserTeams(username: string) {
+  const session = await getSession();
+  const headers = session?.accessToken 
+    ? { Authorization: `Bearer ${session.accessToken}` } 
+    : {};
+
+  // Usamos a instância moveTutorApi que já tem a baseURL correta
+  const response = await moveTutorApi.get(`/teams/user/${username}`, { headers });
+  return response.data; // Retorna { teams: [], count: 0 }
+},
+
+async createTeam(teamData: any) {
+  const session = await getSession();
+  
+  if (!session?.accessToken) {
+    throw new Error("Usuário não autenticado");
   }
+
+  const response = await moveTutorApi.post("/teams/save", teamData, {
+    headers: { Authorization: `Bearer ${session.accessToken}` }
+  });
+  return response.data;
+}
 };

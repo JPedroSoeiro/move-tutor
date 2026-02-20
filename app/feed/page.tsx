@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { teamService } from "@/services/teamService";
+import { AuthLock } from "@/components/auth/AuthLock";
 
 export default function FeedPage() {
   const { data: session } = useSession();
@@ -12,18 +13,23 @@ export default function FeedPage() {
 
   // Busca os times ao carregar a página
   useEffect(() => {
-    const fetchTeams = async () => {
-      try {
-        const data = await teamService.getAllTeams();
-        setTeams(data);
-      } catch (error) {
-        console.error("Erro ao carregar feed:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchTeams();
-  }, []);
+  const fetchTeams = async () => {
+    setLoading(true); // Garante que o estado de loading inicia
+    try {
+      // Importante: teamService.getAllTeams() agora deve lidar com token opcional
+      const data = await teamService.getAllTeams();
+      console.log("DADOS RECEBIDOS NO FEED:", data);
+      setTeams(data);
+    } catch (error) {
+      console.error("Erro ao carregar feed:", error);
+      // Se der erro 401 aqui, é porque o Back-end ainda tem o middleware na rota /feed
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchTeams();
+}, []);
 
   const handleDelete = async (teamId: string) => {
     if (!confirm("Deseja deletar este relatório tático?")) return;
@@ -39,6 +45,7 @@ export default function FeedPage() {
 
   return (
     <div className="max-w-4xl mx-auto py-10 px-4 space-y-12">
+      <AuthLock />
       <header className="text-center">
         <h1 className="text-5xl font-black italic uppercase tracking-tighter text-white">
           Tactical <span className="text-blue-500">Feed</span>

@@ -250,7 +250,7 @@ const handleConfirmSave = async () => {
       name: p.pokemon.name,
       item: p.selectedItem?.name || "Nenhum",
       ability: p.selectedAbility?.name || "Padrão",
-      moves: p.selectedMoves?.map((m: any) => m.name) || []
+      moves: p.selectedMoves?.filter((m: any) => m !== null && m !== undefined).map((m: any) => m.name) || []
     }));
 
   const payload = {
@@ -267,7 +267,6 @@ const handleConfirmSave = async () => {
 const handlePublishClick = () => {
   if (!session) {
     setLoginAlert(true);
-    // Esconde o alerta automaticamente após 3 segundos
     setTimeout(() => setLoginAlert(false), 3000);
     return;
   }
