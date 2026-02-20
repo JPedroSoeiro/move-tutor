@@ -14,15 +14,16 @@ export function Sidebar() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const menuItems = [
+    { name: "Home", path: "/" },
     { name: "Team Builder", path: "/team-builder" },
     { name: "Feed", path: "/feed" },
     { name: "Profile", path: "/profile" },
     { name: "Search", path: "/search" },
   ];
 
-  const handleLogout = () => {
-    signOut({ callbackUrl: "/login" });
-  };
+const handleLogout = async () => {
+  await signOut({ callbackUrl: "/login?logout=manual" });
+};
 
   return (
     <header className="fixed top-0 left-0 w-full h-20 bg-[#0a0a0a]/90 backdrop-blur-xl border-b border-white/5 z-100 px-10 flex items-center justify-between">
