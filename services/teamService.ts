@@ -25,13 +25,17 @@ async getAllTeams() {
   return response.data;
 },
 
-  async deleteTeam(teamId: string) {
-    const session = await getSession();
-    const response = await moveTutorApi.delete(`/teams/${teamId}`, {
-      headers: { Authorization: `Bearer ${session?.accessToken}` }
-    });
-    return response.data;
-  },
+async deleteTeam(id: string) {
+  const session = await getSession();
+  
+  const response = await moveTutorApi.delete(`/teams/${id}`, {
+    headers: { 
+      Authorization: `Bearer ${session?.accessToken}` 
+    }
+  });
+  
+  return response.status === 200 || response.status === 204;
+},
 
   async getUserTeams(username: string) {
   const session = await getSession();

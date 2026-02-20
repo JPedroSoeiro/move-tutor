@@ -48,7 +48,7 @@ export default function SearchPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto pt-24 px-8 pb-20">
+    <div className="max-w-7xl mx-auto pt-4 px-8 pb-20">
       <AuthLock />
       {/* Container da Barra + Dropdown */}
       <div className="relative mb-20 z-50" ref={dropdownRef}>
@@ -98,7 +98,11 @@ export default function SearchPage() {
 
       {/* Resultado do Perfil ou Placeholder */}
       {foundData ? (
-        <ProfileView data={foundData} isOwnProfile={false} onTeamDeleted={() => {}} />
+        <ProfileView 
+          data={foundData} 
+          isOwnProfile={false} 
+          onTeamDeleted={() => {}} 
+        />
       ) : (
         <div className="text-center py-20 border-2 border-dashed border-white/5 rounded-[40px]">
             <p className="text-zinc-800 font-black italic uppercase tracking-[1em]">Clique na barra acima para ver os treinadores</p>
