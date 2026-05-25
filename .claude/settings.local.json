@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm -rf .next)",
+      "Bash(npm run *)",
+      "Bash(curl -s http://localhost:3000/api/health)",
+      "Bash(git add *)",
+      "Bash(git commit -m 'refactor: migrate backend \\(Express\\) to Next.js Route Handlers *)"
+    ]
+  }
+}

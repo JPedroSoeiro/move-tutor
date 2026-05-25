@@ -8,6 +8,7 @@ import { AuthLock } from "@/components/auth/AuthLock";
 export default function ProfilePage() {
   const { data: session } = useSession();
   const [profileData, setProfileData] = useState<any>(null);
+  
 
   useEffect(() => {
     const loadProfile = async () => {

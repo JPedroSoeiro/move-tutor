@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 export const moveTutorApi = axios.create({
-  baseURL: 'http://localhost:3001',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api',
 });
 
 // Interceptor para injetar o token em cada chamada

@@ -17,7 +17,8 @@ export default function SearchPage() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await fetch("http://localhost:3001/teams/users/list");
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+        const response = await fetch(`${apiUrl}/teams/users/list`);
         const data = await response.json();
         setAllUsers(data);
       } catch (error) {

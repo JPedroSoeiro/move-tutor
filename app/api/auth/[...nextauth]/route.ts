@@ -10,7 +10,8 @@ const handler = NextAuth({
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-  const res = await fetch("http://localhost:3001/auth/login", {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+  const res = await fetch(`${apiUrl}/auth/login`, {
     method: "POST",
     body: JSON.stringify(credentials),
     headers: { "Content-Type": "application/json" }
@@ -23,7 +24,7 @@ const handler = NextAuth({
       id: data.user.id,
       name: data.user.full_name,
       email: data.user.email,
-      accessToken: data.session?.access_token // <--- CONFIRME ESSE CAMINHO
+      accessToken: data.session?.access_token
     };
   }
   return null;
