@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/services/supabase';
+import { handleApiError, createSuccessResponse } from '@/lib/api-handler';
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,15 +24,12 @@ export async function POST(request: NextRequest) {
       full_name: data.session?.user.user_metadata?.full_name,
     };
 
-    return NextResponse.json({
+    return createSuccessResponse({
       message: 'Logado!',
       session: data.session,
-      user: user,
+      user,
     });
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || 'Erro interno do servidor' },
-      { status: 500 }
-    );
+  } catch (error: unknown) {
+    return handleApiError(error);
   }
 }

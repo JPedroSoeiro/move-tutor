@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { supabase } from '@/lib/services/supabase';
+import { handleApiError, createSuccessResponse } from '@/lib/api-handler';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,20 +13,14 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      );
+      throw new Error(error.message);
     }
 
-    return NextResponse.json(
-      { message: 'Usuário criado!', user: data.user },
-      { status: 201 }
-    );
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || 'Erro interno do servidor' },
-      { status: 500 }
-    );
+    return createSuccessResponse({
+      message: 'Usuário criado!',
+      user: data.user,
+    }, 201);
+  } catch (error: unknown) {
+    return handleApiError(error);
   }
 }

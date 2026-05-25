@@ -5,7 +5,9 @@
       "Bash(npm run *)",
       "Bash(curl -s http://localhost:3000/api/health)",
       "Bash(git add *)",
-      "Bash(git commit -m 'refactor: migrate backend \\(Express\\) to Next.js Route Handlers *)"
+      "Bash(git commit -m 'refactor: migrate backend \\(Express\\) to Next.js Route Handlers *)",
+      "Bash(npm install *)",
+      "Bash(git commit -m 'refactor: comprehensive code review and improvements *)"
     ]
   }
 }

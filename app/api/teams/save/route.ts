@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/services/supabase';
 import { authenticate } from '@/lib/middleware/auth';
+import { handleApiError, createSuccessResponse } from '@/lib/api-handler';
 
 export async function POST(request: NextRequest): Promise<Response> {
   const auth = await authenticate(request);
@@ -19,9 +20,6 @@ export async function POST(request: NextRequest): Promise<Response> {
     }
 
     const body = await request.json();
-
-    console.log('METADATA DO USUARIO:', user.user_metadata);
-
     const userName = user.user_metadata?.name || user.user_metadata?.full_name || 'Treinador';
 
     const { data, error } = await supabase
@@ -36,16 +34,11 @@ export async function POST(request: NextRequest): Promise<Response> {
       .select();
 
     if (error) {
-      console.error('ERRO SUPABASE AO SALVAR:', error);
-      return NextResponse.json(error, { status: 400 });
+      throw new Error(error.message);
     }
 
-    return NextResponse.json(data[0], { status: 201 });
-  } catch (error: any) {
-    console.error('ERRO CRITICO:', error);
-    return NextResponse.json(
-      { error: error.message },
-      { status: 500 }
-    );
+    return createSuccessResponse(data[0], 201);
+  } catch (error: unknown) {
+    return handleApiError(error);
   }
 }
