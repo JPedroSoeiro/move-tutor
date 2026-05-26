@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import Image from "next/image";
 import { pokemonService } from "@/services/pokemonService";
 import { NATURES } from "@/constants/natures";
 import { RadarChart } from "./RadarChart";
@@ -138,11 +137,15 @@ export function PokemonSlot({
       : move.power;
   };
 
-  const spritePath = isShiny
-    ? pokemon?.sprites.versions?.["generation-v"]?.["black-white"]?.animated
-        ?.front_shiny || pokemon?.sprites.front_shiny
-    : pokemon?.sprites.versions?.["generation-v"]?.["black-white"]?.animated
-        ?.front_default || pokemon?.sprites.front_default;
+  const animatedSprite = isShiny
+    ? pokemon?.sprites.versions?.["generation-v"]?.["black-white"]?.animated?.front_shiny
+    : pokemon?.sprites.versions?.["generation-v"]?.["black-white"]?.animated?.front_default;
+
+  const staticSprite = isShiny
+    ? pokemon?.sprites.front_shiny
+    : pokemon?.sprites.front_default;
+
+  const spritePath = animatedSprite || staticSprite || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon?.id}.png`;
 
   const currentNature = NATURES.find((n) => n.name === selectedNature);
 
@@ -202,12 +205,19 @@ export function PokemonSlot({
             <div className="flex items-center gap-3">
               <div className="relative">
                 <img
-                  src={spritePath || ""}
+                  src={spritePath}
                   width={64}
                   height={64}
                   className="object-contain"
-                  alt="pkmn"
+                  alt={pokemon?.name || "pokemon"}
                   crossOrigin="anonymous"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    const fallback = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon?.id}.png`;
+                    if (target.src !== fallback) {
+                      target.src = fallback;
+                    }
+                  }}
                 />
                 <button
                   onClick={() => {
