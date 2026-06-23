@@ -4,42 +4,48 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { teamService } from "@/services/teamService";
 import { AuthLock } from "@/components/auth/AuthLock";
+import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
+import { toast } from "sonner";
 
 export default function FeedPage() {
   const { data: session } = useSession();
   const [teams, setTeams] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTeam, setSelectedTeam] = useState<any | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  // Busca os times ao carregar a página
   useEffect(() => {
-  const fetchTeams = async () => {
-    setLoading(true); // Garante que o estado de loading inicia
-    try {
-      // Importante: teamService.getAllTeams() agora deve lidar com token opcional
-      const data = await teamService.getAllTeams();
-      console.log("DADOS RECEBIDOS NO FEED:", data);
-      setTeams(data);
-    } catch (error) {
-      console.error("Erro ao carregar feed:", error);
-      // Se der erro 401 aqui, é porque o Back-end ainda tem o middleware na rota /feed
-    } finally {
-      setLoading(false);
-    }
+    const fetchTeams = async () => {
+      setLoading(true);
+      try {
+        const data = await teamService.getAllTeams();
+        setTeams(data);
+      } catch (error) {
+        console.error("Erro ao carregar feed:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTeams();
+  }, []);
+
+  const handleDelete = (teamId: string) => {
+    setDeleteTarget(teamId);
   };
 
-  fetchTeams();
-}, []);
-
-  const handleDelete = async (teamId: string) => {
-    if (!confirm("Deseja deletar este relatório tático?")) return;
-
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
     try {
-      // Implementaremos esta função no teamService em seguida
-      await teamService.deleteTeam(teamId);
-      setTeams(teams.filter((t) => t.id !== teamId));
-    } catch (error) {
-      alert("Erro ao deletar o post.");
+      await teamService.deleteTeam(deleteTarget);
+      setTeams(teams.filter((t) => t.id !== deleteTarget));
+    } catch {
+      toast.error("Erro ao deletar o post.");
+    } finally {
+      setIsDeleting(false);
+      setDeleteTarget(null);
     }
   };
 
@@ -62,8 +68,8 @@ return (
       ) : (
         <div className="grid gap-12">
           {teams.map((team) => (
-            <div 
-              key={team.id} 
+            <div
+              key={team.id}
               onClick={() => setSelectedTeam(team)}
               className="bg-[#0a0a0a] border border-white/5 rounded-[40px] overflow-hidden hover:border-blue-500/20 transition-all group"
             >
@@ -85,9 +91,9 @@ return (
 
                 {/* Botão de Apagar */}
                 {session?.user?.id === team.user_id && (
-                  <button 
+                  <button
                     onClick={(e) => {
-                      e.stopPropagation(); // Evita abrir o modal ao clicar em apagar
+                      e.stopPropagation();
                       handleDelete(team.id);
                     }}
                     className="text-[9px] font-black text-red-500/50 hover:text-red-500 uppercase tracking-widest transition-colors"
@@ -100,7 +106,6 @@ return (
               {/* Corpo do Post - Squad Pro Preview */}
               <div className="p-8">
                 <div className="flex justify-between items-end mb-6">
-                  {/* ADICIONADO: Nome do Time com estilo sincronizado */}
                   <h3 className="text-2xl font-black italic uppercase text-white tracking-tighter">
                     {team.team_name || team.name}
                   </h3>
@@ -112,12 +117,12 @@ return (
                 {/* Grid de Pokémon */}
                 <div className="grid grid-cols-3 gap-4 cursor-pointer">
                   {team.pokemons?.map((p: any, idx: number) => (
-                    <div 
-                      key={idx} 
+                    <div
+                      key={idx}
                       className="bg-zinc-900/40 border border-white/5 rounded-3xl p-4 flex flex-col items-center justify-center group/pkmn hover:bg-blue-600/5 transition-all"
                     >
-                      <img 
-                        src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.pokemon_id}.png`} 
+                      <img
+                        src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.pokemon_id}.png`}
                         alt={p.name}
                         className="w-20 h-20 object-contain drop-shadow-[0_0_15px_rgba(59,130,246,0.2)] group-hover/pkmn:scale-110 transition-transform"
                       />
@@ -144,7 +149,7 @@ return (
       {selectedTeam && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-4">
           <div className="bg-[#0a0a0a] border border-white/10 rounded-32px w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl">
-            
+
             {/* Header do Modal */}
             <div className="p-6 border-b border-white/5 flex justify-between items-center">
               <div>
@@ -155,8 +160,8 @@ return (
                   Data Sheet • {selectedTeam.author_name}
                 </span>
               </div>
-              
-              <button 
+
+              <button
                 onClick={() => setSelectedTeam(null)}
                 className="px-4 py-2 bg-white/5 hover:bg-red-500/10 hover:text-red-500 text-zinc-500 rounded-xl text-[10px] font-black uppercase transition-all border border-white/5"
               >
@@ -203,6 +208,13 @@ return (
           </div>
         </div>
       )}
+
+      <DeleteConfirmModal
+        isOpen={!!deleteTarget}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+        loading={isDeleting}
+      />
     </div>
   );
 }

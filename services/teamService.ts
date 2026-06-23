@@ -1,19 +1,6 @@
 import { moveTutorApi } from "./moveTutorApi";
 import { getSession } from "next-auth/react";
-
-interface Team {
-  id?: string;
-  team_name: string;
-  author_name?: string;
-  pokemons?: any[];
-  [key: string]: any;
-}
-
-interface UserTeamsResponse {
-  teams: Team[];
-  count: number;
-  username: string;
-}
+import type { Team, UserTeamsResponse } from "@/types";
 
 export const teamService = {
   async saveTeam(teamData: Team): Promise<Team> {

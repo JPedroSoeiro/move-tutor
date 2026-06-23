@@ -10,6 +10,7 @@ import html2canvas from "html2canvas";
 import { useRouter } from "next/navigation";
 import { teamService } from "@/services/teamService";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 
 // 1. PARSER FORA DO COMPONENTE (Evita erros de escopo e redeclaração)
 const parseShowdown = (text: string) => {
@@ -155,7 +156,7 @@ export default function Home() {
       link.download = `SquadPro-${Date.now()}.png`;
       link.click();
     } catch (e) {
-      alert("Erro na captura.");
+      toast.error("Erro na captura.");
     } finally {
       setIsDownloading(false);
     }
@@ -213,7 +214,7 @@ export default function Home() {
     setIsImportModalOpen(false);
     setImportText("");
   } catch (e) {
-    alert("Erro ao importar alguns Pokémons. Verifique o formato do texto.");
+    toast.error("Erro ao importar alguns Pokémons. Verifique o formato do texto.");
   } finally {
     setIsImporting(false);
   }
@@ -234,14 +235,17 @@ const handleSaveTeam = async (e: React.FormEvent | undefined, payload: any) => {
     router.refresh();
   } catch (error: any) {
     console.error("Erro ao salvar:", error.response?.data);
-    alert("Erro ao publicar build. Verifique sua conexão.");
+    toast.error("Erro ao publicar build. Verifique sua conexão.");
   } finally {
     setLoading(false);
   }
 };
 
 const handleConfirmSave = async () => {
-  if (!teamName.trim()) return alert("O esquadrão precisa de um nome!");
+  if (!teamName.trim()) {
+    toast.error("O esquadrão precisa de um nome!");
+    return;
+  }
   
   const pokemonsArray = Object.values(teamData)
     .filter((p: any) => p && p.pokemon)

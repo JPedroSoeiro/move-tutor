@@ -1,163 +1,72 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { pokemonService } from "@/services/pokemonService";
 import { NATURES } from "@/constants/natures";
+import { TYPE_COLORS } from "@/constants/typeChart";
 import { RadarChart } from "./RadarChart";
+import { MoveSlot } from "./MoveSlot";
+import { usePokemonSlot } from "@/hooks/usePokemonSlot";
+import { pokemonService } from "@/services/pokemonService";
+import type { SlotData, MoveDetails } from "@/types";
 
 interface Props {
   index: number;
-  onUpdate: (idx: number, data: any) => void;
+  onUpdate: (idx: number, data: Partial<SlotData> | null) => void;
   onCompare: (pkmn: string, stat: string, val: number) => void;
   allNames: string[];
   allItemNames: string[];
-  initialData?: any;
+  initialData?: Partial<SlotData> | null;
 }
 
-export function PokemonSlot({
-  index,
-  onUpdate,
-  onCompare,
-  allNames,
-  allItemNames,
-  initialData,
-}: Props) {
-  const [pokemon, setPokemon] = useState<any>(null);
-  const [moves, setMoves] = useState<any[]>([]);
-  const [selectedMoves, setSelectedMoves] = useState<(any | null)[]>([
-    null,
-    null,
-    null,
-    null,
-  ]);
-  const [selectedAbility, setSelectedAbility] = useState<any | null>(null);
-  const [selectedItem, setSelectedItem] = useState<any | null>(null);
-  const [selectedNature, setSelectedNature] = useState<string>("Hardy");
-  const [isShiny, setIsShiny] = useState(false);
-  const [showOptions, setShowOptions] = useState(false);
-  const [evolutions, setEvolutions] = useState<string[]>([]);
-  const [showEvoLab, setShowEvoLab] = useState(false);
-
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  // LÓGICA DE SINCRONIZAÇÃO E RESET (Resolve os bugs de Troca e Reload)
-  useEffect(() => {
-    const loadDependencies = async () => {
-      if (initialData?.pokemon) {
-        const isNewPokemon = initialData.pokemon.id !== pokemon?.id;
-
-        // 1. Sincroniza o texto visível no input de pesquisa
-        if (inputRef.current) {
-          inputRef.current.value = initialData.pokemon.name;
-        }
-
-        // 2. Busca evoluções (Garante que apareçam após o reload)
-        try {
-          const evos = await pokemonService.getEvolutionChain(
-            initialData.pokemon.species.url,
-          );
-          setEvolutions(evos);
-        } catch (e) {
-          console.error("Erro ao buscar evolução");
-        }
-
-        // 3. Busca ataques disponíveis para este Pokémon específico
-        const availableMoves = initialData.pokemon.moves
-          .map((m: any) => ({ name: m.move.name, url: m.move.url }))
-          .sort((a: any, b: any) => a.name.localeCompare(b.name));
-
-        setMoves(availableMoves);
-        setPokemon(initialData.pokemon);
-
-        // 4. Se for um Pokémon novo (vido do Nemesis ou troca), reseta os campos
-        if (isNewPokemon && !initialData.selectedMoves) {
-          setSelectedMoves([null, null, null, null]);
-          setSelectedAbility(null);
-          setSelectedItem(null);
-          setSelectedNature("Hardy");
-          setIsShiny(false);
-        } else {
-          // Se estiver vindo do LocalStorage, mantém as escolhas
-          setSelectedMoves(
-            initialData.selectedMoves || [null, null, null, null],
-          );
-          setSelectedAbility(initialData.selectedAbility || null);
-          setSelectedItem(initialData.selectedItem || null);
-          setSelectedNature(initialData.nature || "Hardy");
-          setIsShiny(initialData.isShiny || false);
-        }
-      }
-    };
-
-    loadDependencies();
-  }, [initialData]);
-
-  const syncUpdate = (updatedFields: any) => {
-    const finalData = {
-      pokemon,
-      moves,
-      selectedMoves,
-      selectedAbility,
-      selectedItem,
-      nature: selectedNature,
-      isShiny,
-      // Calcula tipos dos ataques para o dashboard
-      moveTypes: (updatedFields.selectedMoves || selectedMoves)
-    .filter((m: any) => m !== null && m.type) 
-    .map((m: any) => m.type?.name || 'unknown'), 
-      ...updatedFields,
-    };
-    onUpdate(index, finalData);
-  };
-
-  const handleSearch = async (name: string) => {
-    if (!name || name === pokemon?.name) return;
-    try {
-      const data = await pokemonService.getPokemonByName(name);
-      // Disparamos o update para o pai, que voltará via initialData para o reset
-      onUpdate(index, { pokemon: data });
-    } catch (e) {
-      console.error("Erro na busca do Pokémon");
-    }
-  };
-
-  const handleClearSlot = () => {
-    if (inputRef.current) inputRef.current.value = "";
-    setPokemon(null);
-    setMoves([]);
-    setEvolutions([]);
-    onUpdate(index, null);
-  };
-
-  const calculateRealPower = (move: any) => {
-    if (!move || !pokemon || !move.power) return move?.power || 0;
-    // Bônus de STAB (Same Type Attack Bonus)
-    return pokemon.types.some((t: any) => t.type.name === move.type.name)
-      ? Math.floor(move.power * 1.5)
-      : move.power;
-  };
-
-  const animatedSprite = isShiny
-    ? pokemon?.sprites.versions?.["generation-v"]?.["black-white"]?.animated?.front_shiny
-    : pokemon?.sprites.versions?.["generation-v"]?.["black-white"]?.animated?.front_default;
-
-  const staticSprite = isShiny
-    ? pokemon?.sprites.front_shiny
-    : pokemon?.sprites.front_default;
-
-  const spritePath = animatedSprite || staticSprite || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon?.id}.png`;
+export function PokemonSlot({ index, onUpdate, onCompare, allNames, allItemNames, initialData }: Props) {
+  const {
+    pokemon,
+    moves,
+    selectedMoves,
+    setSelectedMoves,
+    selectedAbility,
+    setSelectedAbility,
+    selectedItem,
+    setSelectedItem,
+    selectedNature,
+    setSelectedNature,
+    isShiny,
+    setIsShiny,
+    showOptions,
+    setShowOptions,
+    evolutions,
+    showEvoLab,
+    setShowEvoLab,
+    inputRef,
+    syncUpdate,
+    handleSearch,
+    handleClearSlot,
+    calculateRealPower,
+    spritePath,
+  } = usePokemonSlot({ index, initialData, onUpdate });
 
   const currentNature = NATURES.find((n) => n.name === selectedNature);
 
+  const handleMoveChange = (idx: number, move: MoveDetails) => {
+    const ns = [...selectedMoves];
+    ns[idx] = move;
+    setSelectedMoves(ns);
+    syncUpdate({ selectedMoves: ns });
+  };
+
   return (
-    <div className="relative group hover:z-50 p-6 rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl transition-all">
+    <div className="relative group hover:z-50 rounded-2xl bg-gradient-to-b from-white/[0.08] to-white/[0.02] backdrop-blur-xl border border-white/10 shadow-2xl hover:shadow-2xl hover:border-white/20 transition-all overflow-hidden">
+      {/* GRADIENT BACKGROUND */}
+      <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 via-transparent to-transparent pointer-events-none" />
+
+      {/* CONTENT */}
+      <div className="relative p-6 space-y-5">
       {/* PESQUISA */}
-      <div className="relative mb-6">
+      <div className="relative">
         <input
           ref={inputRef}
           list={`list-${index}`}
           placeholder="Buscar Pokémon..."
-          className="w-full bg-transparent border-b border-white/10 pb-2 outline-none text-white font-medium focus:border-blue-500 transition-colors"
+          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 outline-none text-white font-medium placeholder:text-zinc-500 focus:border-blue-500 focus:bg-white/10 transition-all"
           onBlur={(e) => handleSearch(e.target.value)}
         />
         <datalist id={`list-${index}`}>
@@ -180,7 +89,7 @@ export function PokemonSlot({
           </button>
           {showOptions && (
             <div className="absolute right-0 mt-2 w-48 bg-zinc-950 border border-white/10 rounded-2xl shadow-2xl p-2 animate-in zoom-in-95">
-              {pokemon.stats.map((s: any) => (
+              {pokemon.stats.map((s) => (
                 <button
                   key={s.stat.name}
                   onClick={() => {
@@ -189,7 +98,7 @@ export function PokemonSlot({
                   }}
                   className="w-full text-left px-4 py-2 text-[11px] font-bold text-zinc-300 hover:bg-blue-600 hover:text-white rounded-xl flex justify-between capitalize transition-colors"
                 >
-                  <span>{s.stat.name.replace("-", " ")}</span>{" "}
+                  <span>{s.stat.name.replace("-", " ")}</span>
                   <span>{s.base_stat}</span>
                 </button>
               ))}
@@ -199,284 +108,206 @@ export function PokemonSlot({
       )}
 
       {pokemon && (
-        <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-          {/* SPRITE, NOME E EVOLUTION LAB */}
-          <div className="relative group/radar flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="relative">
+        <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 space-y-5">
+          {/* SPRITE & HEADER */}
+          <div className="relative group/radar flex flex-col items-center gap-3 pb-4 border-b border-white/5">
+            {/* SPRITE + SHINY BUTTON */}
+            <div className="relative">
+              <div className="w-32 h-32 rounded-2xl bg-gradient-to-b from-white/10 to-transparent border border-white/10 flex items-center justify-center">
                 <img
                   src={spritePath}
-                  width={64}
-                  height={64}
+                  width={120}
+                  height={120}
                   className="object-contain"
-                  alt={pokemon?.name || "pokemon"}
+                  alt={pokemon.name}
                   crossOrigin="anonymous"
                   onError={(e) => {
                     const target = e.currentTarget;
-                    const fallback = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon?.id}.png`;
-                    if (target.src !== fallback) {
-                      target.src = fallback;
-                    }
+                    const fallback = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.id}.png`;
+                    if (target.src !== fallback) target.src = fallback;
                   }}
                 />
-                <button
-                  onClick={() => {
-                    setIsShiny(!isShiny);
-                    syncUpdate({ isShiny: !isShiny });
-                  }}
-                  className={`absolute -top-2 -left-2 p-1 rounded-full shadow-xl transition-all ${isShiny ? "bg-yellow-400 text-black" : "bg-zinc-800 text-white"}`}
-                >
-                  <svg
-                    width="10"
-                    height="10"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                  </svg>
-                </button>
               </div>
-              <div className="flex flex-col">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-xl font-black text-white uppercase tracking-tighter">
-                    {pokemon.name}
-                  </h3>
-                  {evolutions.length > 1 && (
-                    <div className="relative">
-                      <button
-                        onClick={() => setShowEvoLab(!showEvoLab)}
-                        className="p-1 text-blue-500 hover:text-white transition-colors"
-                      >
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="3"
-                        >
-                          <path d="M12 2v20M7 5l10 14M17 5L7 19" />
-                        </svg>
-                      </button>
-                      {showEvoLab && (
-                        <div className="absolute left-0 mt-2 z-80 bg-zinc-950 border border-blue-500/30 p-2 rounded-xl shadow-2xl min-w-140px">
-                          {evolutions.map((evo) => (
-                            <button
-                              key={evo}
-                              onClick={() => {
-                                handleSearch(evo);
-                                setShowEvoLab(false);
-                              }}
-                              className={`w-full text-left px-3 py-2 rounded-lg text-[10px] font-bold uppercase transition-all ${evo === pokemon.name ? "text-blue-400 bg-blue-400/10" : "text-zinc-400 hover:text-white"}`}
-                            >
-                              {evo}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-                
-                {/* TIPAGEM ADICIONADA AQUI */}
-                <div className="flex gap-1.5 mt-1">
-                  {pokemon.types.map((t: any) => (
-                    <span 
-                      key={t.type.name} 
-                      className="text-[9px] font-black uppercase px-2 py-0.5 rounded-md border border-white/5 bg-zinc-800/80 text-zinc-100"
+              <button
+                onClick={() => {
+                  setIsShiny(!isShiny);
+                  syncUpdate({ isShiny: !isShiny });
+                }}
+                className={`absolute -top-2 -right-2 p-2 rounded-full shadow-xl transition-all border ${isShiny ? "bg-yellow-400 text-black border-yellow-300" : "bg-zinc-800/80 text-white border-white/10"}`}
+                title={isShiny ? "Desativar Shiny" : "Ativar Shiny"}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                </svg>
+              </button>
+            </div>
+
+            {/* NOME & TIPOS */}
+            <div className="text-center space-y-2 w-full">
+              <div className="flex items-center justify-center gap-2">
+                <h3 className="text-lg font-black text-white uppercase tracking-tighter">{pokemon.name}</h3>
+                {evolutions.length > 1 && (
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowEvoLab(!showEvoLab)}
+                      className="p-1 text-blue-400 hover:text-blue-300 transition-colors"
+                      title="Evoluções"
                     >
-                      {t.type.name}
-                    </span>
-                  ))}
-                </div>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path d="M12 2v20M7 5l10 14M17 5L7 19" />
+                      </svg>
+                    </button>
+                    {showEvoLab && (
+                      <div className="absolute left-1/2 -translate-x-1/2 mt-2 z-80 bg-zinc-950 border border-blue-500/30 p-2 rounded-xl shadow-2xl min-w-max">
+                        {evolutions.map((evo) => (
+                          <button
+                            key={evo}
+                            onClick={() => {
+                              handleSearch(evo);
+                              setShowEvoLab(false);
+                            }}
+                            className={`block w-full text-left px-3 py-2 rounded-lg text-[10px] font-bold uppercase transition-all ${evo === pokemon.name ? "text-blue-400 bg-blue-400/10" : "text-zinc-400 hover:text-white"}`}
+                          >
+                            {evo}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-2 justify-center flex-wrap">
+                {pokemon.types.map((t) => (
+                  <span
+                    key={t.type.name}
+                    className={`text-[9px] font-black uppercase px-3 py-1 rounded-full text-white ${TYPE_COLORS[t.type.name]} border border-white/20`}
+                  >
+                    {t.type.name}
+                  </span>
+                ))}
               </div>
             </div>
-            <div className="invisible opacity-0 group-hover/radar:visible group-hover/radar:opacity-100 absolute z-100 bottom-full left-1/2 -translate-x-1/2 mb-6 transition-all duration-150 pointer-events-none">
+
+            {/* RADAR CHART HOVER */}
+            <div className="invisible opacity-0 group-hover/radar:visible group-hover/radar:opacity-100 absolute z-100 -bottom-48 left-1/2 -translate-x-1/2 transition-all duration-150">
               <RadarChart stats={pokemon.stats} />
             </div>
           </div>
 
-          {/* ITEM */}
-          <div className="mb-4 relative group/item">
-            <label className="text-[10px] text-zinc-500 font-bold uppercase mb-1 block">
-              Item
-            </label>
-            <input
-              list={`items-${index}`}
-              defaultValue={selectedItem?.name?.replace(/-/g, " ") || ""}
-              className="w-full bg-zinc-900/50 border border-white/10 rounded-xl p-2.5 text-xs text-zinc-300 outline-none focus:border-blue-500"
-              onBlur={(e) =>
-                pokemonService.getItemDetails(e.target.value).then((d) => {
-                  setSelectedItem(d);
-                  syncUpdate({ selectedItem: d });
-                })
-              }
-            />
-            <datalist id={`items-${index}`}>
-              {allItemNames.map((n) => (
-                <option key={n} value={n.replace(/-/g, " ")} />
-              ))}
-            </datalist>
-            {selectedItem && (
-              <div className="invisible group-hover/item:visible absolute z-50 w-full left-0 -top-24 p-4 bg-zinc-950 border border-white/10 rounded-2xl shadow-2xl backdrop-blur-md">
-                <p className="text-[9px] text-zinc-300 italic">
-                  {selectedItem?.effect_entries?.find(
-                    (e: any) => e.language.name === "en",
-                  )?.short_effect || "Sem descrição."}
-                </p>
-              </div>
-            )}
-          </div>
+          {/* CONFIG GRID */}
+          <div className="grid grid-cols-1 gap-3">
+            {/* ITEM */}
+            <div className="relative group/item">
+              <label className="text-[9px] text-zinc-400 font-bold uppercase mb-1.5 block tracking-wider">Item</label>
+              <input
+                list={`items-${index}`}
+                defaultValue={selectedItem?.name?.replace(/-/g, " ") || ""}
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-blue-500 focus:bg-white/10 transition-all"
+                onBlur={(e) =>
+                  pokemonService.getItemDetails(e.target.value).then((d) => {
+                    setSelectedItem(d);
+                    syncUpdate({ selectedItem: d });
+                  })
+                }
+              />
+              <datalist id={`items-${index}`}>
+                {allItemNames.map((n) => (
+                  <option key={n} value={n.replace(/-/g, " ")} />
+                ))}
+              </datalist>
+              {selectedItem && (
+                <div className="invisible group-hover/item:visible absolute z-50 w-full left-0 bottom-full mb-2 p-3 bg-zinc-950 border border-white/10 rounded-lg shadow-2xl backdrop-blur-md">
+                  <p className="text-[9px] text-zinc-300 italic leading-snug">
+                    {selectedItem.effect_entries?.find((e) => e.language.name === "en")?.short_effect || "Sem descrição."}
+                  </p>
+                </div>
+              )}
+            </div>
 
-          {/* HABILIDADE */}
-          <div className="mb-4 relative group/ability">
-            <label className="text-[10px] text-zinc-500 font-bold uppercase mb-1 block">
-              Habilidade
-            </label>
-            <select
-              className="w-full bg-zinc-900/50 border border-white/10 rounded-xl p-2.5 text-xs text-zinc-300 capitalize outline-none"
-              value={selectedAbility?.name || ""}
-              onChange={(e) => {
-                const url = pokemon.abilities.find(
-                  (a: any) => a.ability.name === e.target.value,
-                )?.ability.url;
-                if (url)
-                  pokemonService.getAbilityDetails(url).then((d) => {
-                    setSelectedAbility(d);
-                    syncUpdate({ selectedAbility: d });
-                  });
-              }}
-            >
-              <option value="">Escolher</option>
-              {pokemon.abilities.map((a: any) => (
-                <option key={a.ability.name} value={a.ability.name}>
-                  {a.ability.name.replace(/-/g, " ")}
-                </option>
-              ))}
-            </select>
-            {selectedAbility && (
-              <div className="invisible group-hover/ability:visible absolute z-50 w-full left-0 -top-24 p-4 bg-zinc-950 border border-white/10 rounded-2xl shadow-2xl backdrop-blur-md">
-                <p className="text-[9px] text-zinc-300 italic">
-                  {selectedAbility?.effect_entries?.find(
-                    (e: any) => e.language.name === "en",
-                  )?.short_effect || "Sem descrição."}
-                </p>
-              </div>
-            )}
-          </div>
+            {/* HABILIDADE */}
+            <div className="relative group/ability">
+              <label className="text-[9px] text-zinc-400 font-bold uppercase mb-1.5 block tracking-wider">Habilidade</label>
+              <select
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white capitalize outline-none focus:border-blue-500 focus:bg-white/10 transition-all"
+                value={selectedAbility?.name || ""}
+                onChange={(e) => {
+                  const url = pokemon.abilities.find((a) => a.ability.name === e.target.value)?.ability.url;
+                  if (url)
+                    pokemonService.getAbilityDetails(url).then((d) => {
+                      setSelectedAbility(d);
+                      syncUpdate({ selectedAbility: d });
+                    });
+                }}
+              >
+                <option value="">Escolher</option>
+                {pokemon.abilities.map((a) => (
+                  <option key={a.ability.name} value={a.ability.name}>
+                    {a.ability.name.replace(/-/g, " ")}
+                  </option>
+                ))}
+              </select>
+              {selectedAbility && (
+                <div className="invisible group-hover/ability:visible absolute z-50 w-full left-0 bottom-full mb-2 p-3 bg-zinc-950 border border-white/10 rounded-lg shadow-2xl backdrop-blur-md">
+                  <p className="text-[9px] text-zinc-300 italic leading-snug">
+                    {selectedAbility.effect_entries?.find((e) => e.language.name === "en")?.short_effect || "Sem descrição."}
+                  </p>
+                </div>
+              )}
+            </div>
 
-          {/* NATUREZA */}
-          <div className="mb-6 relative group/nature">
-            <label className="text-[10px] text-zinc-500 font-bold uppercase mb-1 block">
-              Natureza
-            </label>
-            <select
-              value={selectedNature}
-              className="w-full bg-zinc-900/50 border border-white/10 rounded-xl p-2.5 text-xs text-zinc-300 outline-none"
-              onChange={(e) => {
-                setSelectedNature(e.target.value);
-                syncUpdate({ nature: e.target.value });
-              }}
-            >
-              {NATURES.map((n) => (
-                <option key={n.name} value={n.name}>
-                  {n.name}
-                </option>
-              ))}
-            </select>
-            <div className="invisible group-hover/nature:visible absolute z-30 right-0 -top-12 p-2 bg-zinc-900 border border-white/10 rounded-lg flex gap-3">
-              <span className="text-[10px] font-black text-green-400">
-                ↑ {currentNature?.plus}
-              </span>
-              <span className="text-[10px] font-black text-red-400">
-                ↓ {currentNature?.minus}
-              </span>
+            {/* NATUREZA */}
+            <div className="relative group/nature">
+              <label className="text-[9px] text-zinc-400 font-bold uppercase mb-1.5 block tracking-wider">Natureza</label>
+              <select
+                value={selectedNature}
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-blue-500 focus:bg-white/10 transition-all"
+                onChange={(e) => {
+                  setSelectedNature(e.target.value);
+                  syncUpdate({ nature: e.target.value });
+                }}
+              >
+                {NATURES.map((n) => (
+                  <option key={n.name} value={n.name}>
+                    {n.name}
+                  </option>
+                ))}
+              </select>
+              <div className="invisible group-hover/nature:visible absolute z-30 right-0 bottom-full mb-1 p-2 bg-zinc-900/95 border border-white/10 rounded-lg flex gap-3 text-[9px] font-black whitespace-nowrap">
+                <span className="text-green-400">↑ {currentNature?.plus}</span>
+                <span className="text-red-400">↓ {currentNature?.minus}</span>
+              </div>
             </div>
           </div>
 
           {/* ATAQUES */}
-          <div className="space-y-3">
-            {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="relative group/move">
-                <select
-                  className="w-full bg-zinc-900/50 border border-white/10 rounded-xl p-2.5 text-xs text-zinc-300 capitalize outline-none"
-                  value={selectedMoves[i]?.name || ""}
-                  onChange={(e) => {
-                    const url = moves.find(
-                      (m) => m.name === e.target.value,
-                    )?.url;
-                    if (url)
-                      pokemonService.getMoveDetails(url).then((d) => {
-                        const ns = [...selectedMoves];
-                        ns[i] = d;
-                        setSelectedMoves(ns);
-                        syncUpdate({ selectedMoves: ns });
-                      });
-                  }}
-                >
-                  <option value="">Ataque {i + 1}</option>
-                  {moves.map((m) => (
-                    <option key={m.name} value={m.name}>
-                      {m.name.replace(/-/g, " ")}
-                    </option>
-                  ))}
-                </select>
-                {selectedMoves[i] && (
-                  <div className="invisible group-hover/move:visible absolute z-60 w-full left-0 -top-40 p-4 bg-zinc-950 border border-white/20 rounded-2xl shadow-2xl backdrop-blur-md">
-                    <div className="flex justify-between items-center mb-3 border-b border-white/10 pb-2">
-                      <div className="text-center">
-                        <p className="text-[8px] text-zinc-500 uppercase font-black">
-                          Power
-                        </p>
-                        <p
-                          className={`text-sm font-black ${calculateRealPower(selectedMoves[i]) !== selectedMoves[i]?.power ? "text-blue-400" : "text-white"}`}
-                        >
-                          {calculateRealPower(selectedMoves[i]) || "--"}
-                        </p>
-                      </div>
-                      <div className="text-center px-4 border-x border-white/5">
-                        <p className="text-[8px] text-zinc-500 uppercase font-black">
-                          Acc
-                        </p>
-                        <p className="text-sm font-black text-white">
-                          {selectedMoves[i]?.accuracy
-                            ? `${selectedMoves[i]?.accuracy}%`
-                            : "--"}
-                        </p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-[8px] text-zinc-500 uppercase font-black">
-                          PP
-                        </p>
-                        <p className="text-sm font-black text-white">
-                          {selectedMoves[i]?.pp}
-                        </p>
-                      </div>
-                    </div>
-                    <p className="text-[9px] text-zinc-300 italic">
-                      {selectedMoves[i]?.effect_entries
-                        ?.find((e: any) => e.language.name === "en")
-                        ?.short_effect?.replace(
-                          "$effect_chance",
-                          selectedMoves[i]?.effect_chance,
-                        ) || "Sem efeito adicional."}
-                    </p>
-                  </div>
-                )}
-              </div>
-            ))}
+          <div className="space-y-2 pt-2">
+            <label className="text-[9px] text-zinc-400 font-bold uppercase block tracking-wider">Ataques</label>
+            <div className="grid grid-cols-2 gap-2">
+              {[0, 1, 2, 3].map((i) => (
+                <MoveSlot
+                  key={i}
+                  moveIndex={i}
+                  selectedMove={selectedMoves[i]}
+                  moves={moves}
+                  realPower={calculateRealPower(selectedMoves[i])}
+                  onMoveChange={handleMoveChange}
+                />
+              ))}
+            </div>
           </div>
 
-          <div className="mt-8 pt-4 border-t border-white/5 flex justify-center">
+          {/* FOOTER */}
+          <div className="pt-3 border-t border-white/10 flex justify-center">
             <button
               onClick={handleClearSlot}
-              className="text-[9px] font-black uppercase tracking-[0.3em] text-zinc-700 hover:text-red-500 transition-colors"
+              className="text-[8px] font-black uppercase tracking-widest text-zinc-600 hover:text-red-400 transition-colors"
             >
-              [ Remover Pokémon ]
+              ✕ REMOVER
             </button>
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
