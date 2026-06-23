@@ -95,8 +95,11 @@ export function usePokemonSlot({ index, initialData, onUpdate }: UsePokemonSlotP
       onUpdate(index, { pokemon: data });
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : "Pokémon não encontrado";
-      console.error("Erro na busca do Pokémon:", error);
-      toast.error(`Erro: ${errorMsg}`);
+      // Apenas loga erros não-relacionados a "não encontrado"
+      if (!errorMsg.includes("não encontrado")) {
+        console.error("Erro na busca do Pokémon:", error);
+      }
+      toast.error(`❌ ${errorMsg}`);
     }
   };
 
