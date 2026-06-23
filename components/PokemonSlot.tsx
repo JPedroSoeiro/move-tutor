@@ -76,41 +76,11 @@ export function PokemonSlot({ index, onUpdate, onCompare, allNames, allItemNames
         </datalist>
       </div>
 
-      {/* MENU STAT SCOUT */}
-      {pokemon && (
-        <div className="absolute top-20 right-4 z-70">
-          <button
-            onClick={() => setShowOptions(!showOptions)}
-            className="w-8 h-8 flex items-center justify-center text-zinc-500 hover:text-white bg-white/5 rounded-full border border-white/5"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
-            </svg>
-          </button>
-          {showOptions && (
-            <div className="absolute right-0 mt-2 w-48 bg-zinc-950 border border-white/10 rounded-2xl shadow-2xl p-2 animate-in zoom-in-95">
-              {pokemon.stats.map((s) => (
-                <button
-                  key={s.stat.name}
-                  onClick={() => {
-                    onCompare(pokemon.name, s.stat.name, s.base_stat);
-                    setShowOptions(false);
-                  }}
-                  className="w-full text-left px-4 py-2 text-[11px] font-bold text-zinc-300 hover:bg-blue-600 hover:text-white rounded-xl flex justify-between capitalize transition-colors"
-                >
-                  <span>{s.stat.name.replace("-", " ")}</span>
-                  <span>{s.base_stat}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
 
       {pokemon && (
         <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 space-y-5">
           {/* SPRITE & HEADER */}
-          <div className="relative group/radar flex flex-col items-center gap-3 pb-4 border-b border-white/5">
+          <div className="relative flex flex-col items-center gap-3 pb-4 border-b border-white/5">
             {/* SPRITE + SHINY BUTTON */}
             <div className="relative">
               <div className="w-32 h-32 rounded-2xl bg-gradient-to-b from-white/10 to-transparent border border-white/10 flex items-center justify-center">
@@ -143,7 +113,7 @@ export function PokemonSlot({ index, onUpdate, onCompare, allNames, allItemNames
             </div>
 
             {/* NOME & TIPOS */}
-            <div className="text-center space-y-2 w-full">
+            <div className="text-center space-y-3 w-full">
               <div className="flex items-center justify-center gap-2">
                 <h3 className="text-lg font-black text-white uppercase tracking-tighter">{pokemon.name}</h3>
                 {evolutions.length > 1 && (
@@ -186,11 +156,41 @@ export function PokemonSlot({ index, onUpdate, onCompare, allNames, allItemNames
                   </span>
                 ))}
               </div>
-            </div>
 
-            {/* RADAR CHART HOVER */}
-            <div className="invisible opacity-0 group-hover/radar:visible group-hover/radar:opacity-100 absolute z-100 -bottom-48 left-1/2 -translate-x-1/2 transition-all duration-150">
-              <RadarChart stats={pokemon.stats} />
+              {/* STATS BUTTON */}
+              <div className="relative group/stats pt-1">
+                <button
+                  onClick={() => setShowOptions(!showOptions)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[9px] font-black uppercase tracking-wider text-zinc-300 hover:text-white bg-white/5 border border-white/10 rounded-lg hover:border-blue-500/50 hover:bg-blue-500/10 transition-all"
+                  title="Ver estatísticas"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 17"></polyline>
+                    <polyline points="17 6 23 6 23 12"></polyline>
+                  </svg>
+                  Stats
+                </button>
+
+                {showOptions && (
+                  <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-48 bg-zinc-950 border border-white/10 rounded-xl shadow-2xl p-3 z-80 animate-in zoom-in-95">
+                    <div className="space-y-2">
+                      {pokemon.stats.map((s) => (
+                        <button
+                          key={s.stat.name}
+                          onClick={() => {
+                            onCompare(pokemon.name, s.stat.name, s.base_stat);
+                            setShowOptions(false);
+                          }}
+                          className="w-full text-left px-2 py-1.5 text-[10px] font-bold text-zinc-300 hover:bg-blue-600 hover:text-white rounded-lg flex justify-between capitalize transition-colors"
+                        >
+                          <span>{s.stat.name.replace("-", " ")}</span>
+                          <span className="font-black text-blue-400">{s.base_stat}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
