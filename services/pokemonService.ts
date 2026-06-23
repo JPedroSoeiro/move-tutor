@@ -111,8 +111,15 @@ export const pokemonService = {
   },
 
   getPokemonByName: async (name: string) => {
-    const { data } = await api.get(`/pokemon/${name.toLowerCase()}`);
-    return data;
+    try {
+      const { data } = await api.get(`/pokemon/${name.toLowerCase()}`);
+      return data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        throw new Error(`Pokémon "${name}" não encontrado`);
+      }
+      throw error;
+    }
   },
 
   getItemDetails: async (name: string) => {

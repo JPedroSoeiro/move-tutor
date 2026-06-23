@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { pokemonService } from "@/services/pokemonService";
 import type {
   PokemonData,
@@ -92,8 +93,10 @@ export function usePokemonSlot({ index, initialData, onUpdate }: UsePokemonSlotP
     try {
       const data = await pokemonService.getPokemonByName(name);
       onUpdate(index, { pokemon: data });
-    } catch {
-      console.error("Erro na busca do Pokémon");
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "Pokémon não encontrado";
+      console.error("Erro na busca do Pokémon:", error);
+      toast.error(`Erro: ${errorMsg}`);
     }
   };
 
