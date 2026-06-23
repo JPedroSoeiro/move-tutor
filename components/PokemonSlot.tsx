@@ -78,128 +78,123 @@ export function PokemonSlot({ index, onUpdate, onCompare, allNames, allItemNames
 
 
       {pokemon && (
-        <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 space-y-5">
-          {/* SPRITE & HEADER */}
-          <div className="relative grid grid-cols-[120px_1fr] gap-4 pb-4 border-b border-white/5 items-start">
-            {/* SPRITE - LEFT COLUMN */}
-            <div className="flex flex-col items-center gap-2">
-              <div className="relative w-40 h-40 rounded-2xl bg-gradient-to-b from-white/10 via-white/5 to-zinc-900/50 border border-white/10 overflow-hidden flex items-center justify-center shadow-lg p-2">
-                <img
-                  src={spritePath}
-                  alt={pokemon.name}
-                  className="w-full h-full object-contain object-center"
-                  crossOrigin="anonymous"
-                  onError={(e) => {
-                    const target = e.currentTarget;
-                    const fallback = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.id}.png`;
-                    if (target.src !== fallback) target.src = fallback;
-                  }}
-                />
-              </div>
+        <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 space-y-4">
+          {/* SPRITE */}
+          <div className="relative flex justify-center">
+            <div className="relative w-36 h-36 rounded-2xl bg-gradient-to-b from-white/10 via-white/5 to-zinc-900/50 border border-white/10 overflow-hidden flex items-center justify-center shadow-lg p-2">
+              <img
+                src={spritePath}
+                alt={pokemon.name}
+                className="w-full h-full object-contain object-center"
+                crossOrigin="anonymous"
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  const fallback = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.id}.png`;
+                  if (target.src !== fallback) target.src = fallback;
+                }}
+              />
             </div>
+          </div>
 
-            {/* NAME, TYPES & BUTTONS - RIGHT COLUMN */}
-            <div className="flex flex-col gap-2 justify-start">
-              {/* HEADER WITH BUTTONS */}
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex flex-col gap-1">
-                  <h3 className="text-lg font-black text-white uppercase tracking-tighter">{pokemon.name}</h3>
-                </div>
-                <div className="flex gap-1.5">
-                  {/* SHINY BUTTON */}
+          {/* NAME & BUTTONS */}
+          <div className="flex items-center justify-between gap-2 px-1">
+            <h3 className="text-lg font-black text-white uppercase tracking-tighter flex-1">{pokemon.name}</h3>
+
+            <div className="flex gap-1.5 shrink-0">
+              {/* SHINY BUTTON */}
+              <button
+                onClick={() => {
+                  setIsShiny(!isShiny);
+                  syncUpdate({ isShiny: !isShiny });
+                }}
+                className={`p-1.5 rounded-lg shadow-lg transition-all border ${isShiny ? "bg-yellow-400 text-black border-yellow-300" : "bg-zinc-800/80 text-white border-white/10 hover:border-yellow-400/50 hover:bg-zinc-700"}`}
+                title={isShiny ? "Desativar Shiny" : "Ativar Shiny"}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                </svg>
+              </button>
+
+              {/* STATS BUTTON */}
+              <div className="relative group/stats">
+                <button
+                  onClick={() => setShowOptions(!showOptions)}
+                  className="p-1.5 text-white bg-zinc-800/80 border border-white/10 rounded-lg hover:border-blue-500/50 hover:bg-blue-500/20 transition-all"
+                  title="Ver estatísticas"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 17"></polyline>
+                    <polyline points="17 6 23 6 23 12"></polyline>
+                  </svg>
+                </button>
+
+                {showOptions && (
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-zinc-950 border border-white/10 rounded-xl shadow-2xl p-3 z-80 animate-in zoom-in-95">
+                    <div className="space-y-2">
+                      {pokemon.stats.map((s) => (
+                        <button
+                          key={s.stat.name}
+                          onClick={() => {
+                            onCompare(pokemon.name, s.stat.name, s.base_stat);
+                            setShowOptions(false);
+                          }}
+                          className="w-full text-left px-2 py-1.5 text-[10px] font-bold text-zinc-300 hover:bg-blue-600 hover:text-white rounded-lg flex justify-between capitalize transition-colors"
+                        >
+                          <span>{s.stat.name.replace("-", " ")}</span>
+                          <span className="font-black text-blue-400">{s.base_stat}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* EVOLUTION BUTTON */}
+              {evolutions.length > 1 && (
+                <div className="relative">
                   <button
-                    onClick={() => {
-                      setIsShiny(!isShiny);
-                      syncUpdate({ isShiny: !isShiny });
-                    }}
-                    className={`p-1.5 rounded-lg shadow-lg transition-all border ${isShiny ? "bg-yellow-400 text-black border-yellow-300" : "bg-zinc-800/80 text-white border-white/10 hover:border-yellow-400/50 hover:bg-zinc-700"}`}
-                    title={isShiny ? "Desativar Shiny" : "Ativar Shiny"}
+                    onClick={() => setShowEvoLab(!showEvoLab)}
+                    className="p-1.5 text-blue-400 hover:text-blue-300 bg-zinc-800/50 border border-blue-500/30 rounded-lg hover:border-blue-500/50 transition-colors"
+                    title="Evoluções"
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M12 2v20M7 5l10 14M17 5L7 19" />
                     </svg>
                   </button>
-
-                  {/* STATS BUTTON */}
-                  <div className="relative group/stats">
-                    <button
-                      onClick={() => setShowOptions(!showOptions)}
-                      className="p-1.5 text-white bg-zinc-800/80 border border-white/10 rounded-lg hover:border-blue-500/50 hover:bg-blue-500/20 transition-all"
-                      title="Ver estatísticas"
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <polyline points="23 6 13.5 15.5 8.5 10.5 1 17"></polyline>
-                        <polyline points="17 6 23 6 23 12"></polyline>
-                      </svg>
-                    </button>
-
-                    {showOptions && (
-                      <div className="absolute right-0 top-full mt-2 w-48 bg-zinc-950 border border-white/10 rounded-xl shadow-2xl p-3 z-80 animate-in zoom-in-95">
-                        <div className="space-y-2">
-                          {pokemon.stats.map((s) => (
-                            <button
-                              key={s.stat.name}
-                              onClick={() => {
-                                onCompare(pokemon.name, s.stat.name, s.base_stat);
-                                setShowOptions(false);
-                              }}
-                              className="w-full text-left px-2 py-1.5 text-[10px] font-bold text-zinc-300 hover:bg-blue-600 hover:text-white rounded-lg flex justify-between capitalize transition-colors"
-                            >
-                              <span>{s.stat.name.replace("-", " ")}</span>
-                              <span className="font-black text-blue-400">{s.base_stat}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* EVOLUTION BUTTON */}
-                  {evolutions.length > 1 && (
-                    <div className="relative">
-                      <button
-                        onClick={() => setShowEvoLab(!showEvoLab)}
-                        className="p-1.5 text-blue-400 hover:text-blue-300 bg-zinc-800/50 border border-blue-500/30 rounded-lg hover:border-blue-500/50 transition-colors"
-                        title="Evoluções"
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                          <path d="M12 2v20M7 5l10 14M17 5L7 19" />
-                        </svg>
-                      </button>
-                      {showEvoLab && (
-                        <div className="absolute right-0 top-full mt-2 z-80 bg-zinc-950 border border-blue-500/30 p-2 rounded-xl shadow-2xl min-w-max">
-                          {evolutions.map((evo) => (
-                            <button
-                              key={evo}
-                              onClick={() => {
-                                handleSearch(evo);
-                                setShowEvoLab(false);
-                              }}
-                              className={`block w-full text-left px-3 py-2 rounded-lg text-[10px] font-bold uppercase transition-all ${evo === pokemon.name ? "text-blue-400 bg-blue-400/10" : "text-zinc-400 hover:text-white"}`}
-                            >
-                              {evo}
-                            </button>
-                          ))}
-                        </div>
-                      )}
+                  {showEvoLab && (
+                    <div className="absolute right-0 top-full mt-2 z-80 bg-zinc-950 border border-blue-500/30 p-2 rounded-xl shadow-2xl min-w-max">
+                      {evolutions.map((evo) => (
+                        <button
+                          key={evo}
+                          onClick={() => {
+                            handleSearch(evo);
+                            setShowEvoLab(false);
+                          }}
+                          className={`block w-full text-left px-3 py-2 rounded-lg text-[10px] font-bold uppercase transition-all ${evo === pokemon.name ? "text-blue-400 bg-blue-400/10" : "text-zinc-400 hover:text-white"}`}
+                        >
+                          {evo}
+                        </button>
+                      ))}
                     </div>
                   )}
                 </div>
-              </div>
-
-              {/* TYPES */}
-              <div className="flex gap-2 flex-wrap">
-                {pokemon.types.map((t) => (
-                  <span
-                    key={t.type.name}
-                    className={`text-[8px] font-black uppercase px-2.5 py-1 rounded-full text-white ${TYPE_COLORS[t.type.name]} border border-white/20`}
-                  >
-                    {t.type.name}
-                  </span>
-                ))}
-              </div>
+              )}
             </div>
           </div>
+
+          {/* TYPES */}
+          <div className="flex gap-2 flex-wrap justify-center px-1">
+            {pokemon.types.map((t) => (
+              <span
+                key={t.type.name}
+                className={`text-[8px] font-black uppercase px-3 py-1 rounded-full text-white ${TYPE_COLORS[t.type.name]} border border-white/20`}
+              >
+                {t.type.name}
+              </span>
+            ))}
+          </div>
+
+          <div className="border-t border-white/5 pt-4"></div>
 
           {/* CONFIG GRID */}
           <div className="grid grid-cols-1 gap-3">
