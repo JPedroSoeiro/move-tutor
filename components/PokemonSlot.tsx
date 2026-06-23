@@ -83,13 +83,11 @@ export function PokemonSlot({ index, onUpdate, onCompare, allNames, allItemNames
           <div className="relative grid grid-cols-[120px_1fr] gap-4 pb-4 border-b border-white/5 items-start">
             {/* SPRITE - LEFT COLUMN */}
             <div className="flex flex-col items-center gap-2">
-              <div className="relative w-32 h-32 rounded-2xl bg-gradient-to-b from-white/10 via-white/5 to-zinc-900/50 border border-white/10 overflow-hidden flex items-center justify-center shadow-lg">
+              <div className="relative w-40 h-40 rounded-2xl bg-gradient-to-b from-white/10 via-white/5 to-zinc-900/50 border border-white/10 overflow-hidden flex items-center justify-center shadow-lg p-2">
                 <img
                   src={spritePath}
-                  width={120}
-                  height={120}
-                  className="object-contain"
                   alt={pokemon.name}
+                  className="w-full h-full object-contain object-center"
                   crossOrigin="anonymous"
                   onError={(e) => {
                     const target = e.currentTarget;
