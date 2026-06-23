@@ -202,7 +202,7 @@ export function PokemonSlot({ index, onUpdate, onCompare, allNames, allItemNames
               <input
                 list={`items-${index}`}
                 defaultValue={selectedItem?.name?.replace(/-/g, " ") || ""}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-blue-500 focus:bg-white/10 transition-all"
+                className="w-full bg-zinc-900/80 border border-white/20 rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-blue-500 focus:bg-zinc-800 focus:ring-2 focus:ring-blue-500/30 transition-all hover:border-white/40 hover:bg-zinc-800/50"
                 onBlur={(e) =>
                   pokemonService.getItemDetails(e.target.value).then((d) => {
                     setSelectedItem(d);
@@ -228,7 +228,13 @@ export function PokemonSlot({ index, onUpdate, onCompare, allNames, allItemNames
             <div className="relative group/ability">
               <label className="text-[9px] text-zinc-400 font-bold uppercase mb-1.5 block tracking-wider">Habilidade</label>
               <select
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white capitalize outline-none focus:border-blue-500 focus:bg-white/10 transition-all"
+                className="w-full bg-zinc-900/80 border border-white/20 rounded-lg px-3 py-2 text-sm text-white capitalize outline-none focus:border-blue-500 focus:bg-zinc-800 focus:ring-2 focus:ring-blue-500/30 transition-all appearance-none cursor-pointer hover:border-white/40 hover:bg-zinc-800/50"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23fff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                  backgroundRepeat: "no-repeat",
+                  backgroundPosition: "right 0.5rem center",
+                  paddingRight: "1.75rem"
+                }}
                 value={selectedAbility?.name || ""}
                 onChange={(e) => {
                   const url = pokemon.abilities.find((a) => a.ability.name === e.target.value)?.ability.url;
@@ -260,7 +266,13 @@ export function PokemonSlot({ index, onUpdate, onCompare, allNames, allItemNames
               <label className="text-[9px] text-zinc-400 font-bold uppercase mb-1.5 block tracking-wider">Natureza</label>
               <select
                 value={selectedNature}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-blue-500 focus:bg-white/10 transition-all"
+                className="w-full bg-zinc-900/80 border border-white/20 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-blue-500 focus:bg-zinc-800 focus:ring-2 focus:ring-blue-500/30 transition-all appearance-none cursor-pointer hover:border-white/40 hover:bg-zinc-800/50"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23fff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                  backgroundRepeat: "no-repeat",
+                  backgroundPosition: "right 0.5rem center",
+                  paddingRight: "1.75rem"
+                }}
                 onChange={(e) => {
                   setSelectedNature(e.target.value);
                   syncUpdate({ nature: e.target.value });
