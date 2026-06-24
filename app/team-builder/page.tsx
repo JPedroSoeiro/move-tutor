@@ -362,10 +362,6 @@ const handlePublishClick = () => {
         <AnalysisDashboard
           missing={missing}
           defWeaknesses={defWeaknesses}
-          tips={tips}
-          nemesis={nemesis}
-          onAddNemesis={handleAddNemesis}
-          replacementAdvice={replacementAdvice}
         />
 
         {/* MODAL 1: SQUAD PRO (DOWNLOAD) */}
