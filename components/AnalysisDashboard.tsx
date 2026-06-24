@@ -1,13 +1,31 @@
 import { TYPE_COLORS } from "@/constants/typeChart";
+import { TeamChecklist } from "./TeamChecklist";
+import { TypeCoverageTable } from "./TypeCoverageTable";
+import { SpeedTiers } from "./SpeedTiers";
+import { TeamValidation } from "./TeamValidation";
 
 interface Props {
   missing: string[];
   defWeaknesses: [string, number][];
+  teamData: Record<number, any>;
 }
 
-export function AnalysisDashboard({ missing, defWeaknesses }: Props) {
+export function AnalysisDashboard({ missing, defWeaknesses, teamData }: Props) {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-20">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-20 space-y-6">
+      {/* TEAM CHECKLIST */}
+      <TeamChecklist teamData={teamData} />
+
+      {/* TYPE COVERAGE TABLE */}
+      <TypeCoverageTable teamData={teamData} />
+
+      {/* SPEED TIERS */}
+      <SpeedTiers teamData={teamData} />
+
+      {/* TEAM VALIDATION */}
+      <TeamValidation teamData={teamData} missing={missing} defWeaknesses={defWeaknesses} />
+
+      {/* ORIGINAL SECTIONS */}
       {/* COLUNA 1: COBERTURA FALTANTE */}
       <section className="p-6 bg-gradient-to-br from-white/[0.08] to-white/[0.02] backdrop-blur-xl rounded-2xl border border-white/10 hover:border-white/20 shadow-lg hover:shadow-xl transition-all">
         <h2 className="text-[9px] font-black text-white mb-5 uppercase tracking-widest flex items-center gap-2">
