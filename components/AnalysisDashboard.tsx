@@ -12,7 +12,7 @@ interface Props {
 
 export function AnalysisDashboard({ missing, defWeaknesses, teamData }: Props) {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-20 space-y-6">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-20">
       {/* TEAM CHECKLIST */}
       <TeamChecklist teamData={teamData} />
 
